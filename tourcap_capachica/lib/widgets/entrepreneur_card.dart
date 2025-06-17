@@ -8,6 +8,8 @@ class EntrepreneurCard extends StatelessWidget {
   final bool isAdmin;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final bool showEditButton; // Controla si se muestra el botón de edición
+  final bool showDeleteButton; // Controla si se muestra el botón de eliminar
 
   const EntrepreneurCard({
     Key? key,
@@ -16,6 +18,8 @@ class EntrepreneurCard extends StatelessWidget {
     this.isAdmin = false,
     this.onEdit,
     this.onDelete,
+    this.showEditButton = false, // Por defecto no mostrar el botón de edición
+    this.showDeleteButton = true, // Por defecto mostrar el botón de eliminar (para el panel de administración)
   }) : super(key: key);
 
   @override
@@ -101,16 +105,18 @@ class EntrepreneurCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          color: Colors.blue,
-                          onPressed: onEdit,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          color: Colors.red,
-                          onPressed: onDelete,
-                        ),
+                        if (showEditButton) // Solo mostrar el botón de edición si showEditButton es true
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            color: Colors.blue,
+                            onPressed: onEdit,
+                          ),
+                        if (showDeleteButton) // Solo mostrar el botón de eliminar si showDeleteButton es true
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            color: Colors.red,
+                            onPressed: onDelete,
+                          ),
                       ],
                     ),
                   ],

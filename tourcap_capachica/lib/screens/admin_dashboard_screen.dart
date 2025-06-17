@@ -150,6 +150,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                           onDelete: () {
                             _confirmDelete(context, entrepreneur);
                           },
+                          showEditButton: true, // Habilitar el botón de edición
+                          showDeleteButton: true, // Habilitar el botón de eliminación
                         );
                       },
                     ),
@@ -164,11 +166,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   final _tipoServicioController = TextEditingController();
   final _locationController = TextEditingController();
   final _contactInfoController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _horarioAtencionController = TextEditingController();
+  final _precioRangoController = TextEditingController();
   Entrepreneur? _currentEntrepreneur;
   String? _selectedTipoServicio;
   String? _selectedLocation;
+  String? _selectedCategoria;
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
+  bool _estado = true;
+  
+  // Variables para el horario
+  TimeOfDay _horaInicio = const TimeOfDay(hour: 8, minute: 0);
+  TimeOfDay _horaFin = const TimeOfDay(hour: 18, minute: 0);
+  final Set<int> _diasSeleccionados = {1, 2, 3, 4, 5, 6, 7}; // Por defecto todos los días
+  final List<String> _diasSemana = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
   
   // Opciones predefinidas para tipo de servicio
   final List<String> _tipoServicioOptions = [
@@ -191,6 +204,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     'Escallani',
     'Paramis',
     'Otro lugar en Capachica'
+  ];
+
+  // Opciones predefinidas para categoría
+  final List<String> _categoriaOptions = [
+    'Turismo',
+    'Hospedaje',
+    'Gastronomía',
+    'Artesanía',
+    'Otro'
   ];
 
   Widget _buildManageEntrepreneurForm(BuildContext context, EntrepreneurProvider entrepreneurProvider) {
@@ -272,6 +294,111 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             ),
             const SizedBox(height: 16),
             
+            // Email field
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                hintText: 'ejemplo@email.com',
+                prefixIcon: Icon(Icons.email),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa un email';
+                }
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                  return 'Por favor ingresa un email válido';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // Horario de Atención field
+            InkWell(
+              onTap: _showHorarioSelector,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Horario de Atención',
+                  hintText: 'Selecciona el horario',
+                  prefixIcon: Icon(Icons.access_time),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _horarioAtencionController.text.isEmpty
+                          ? 'Seleccionar horario'
+                          : _horarioAtencionController.text,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: _showDiasSelector,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Rango de Precios field
+            TextFormField(
+              controller: _precioRangoController,
+              decoration: const InputDecoration(
+                labelText: 'Rango de Precios',
+                hintText: 'Ej: 50-100 USD',
+                prefixIcon: Icon(Icons.attach_money),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa un rango de precios';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // Categoría dropdown
+            DropdownButtonFormField<String>(
+              value: _selectedCategoria,
+              decoration: const InputDecoration(
+                labelText: 'Categoría',
+                prefixIcon: Icon(Icons.category),
+              ),
+              items: _categoriaOptions.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedCategoria = newValue;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor selecciona una categoría';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // Estado switch
+            SwitchListTile(
+              title: const Text('Activo'),
+              value: _estado,
+              onChanged: (bool value) {
+                setState(() {
+                  _estado = value;
+                });
+              },
+              secondary: const Icon(Icons.toggle_on),
+            ),
+            const SizedBox(height: 16),
+            
             // Image selection
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +410,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    // Vista previa de la imagen
                     Container(
                       width: 100,
                       height: 100,
@@ -318,7 +444,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                                 ),
                     ),
                     const SizedBox(width: 16),
-                    // Botones para gestionar la imagen
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,16 +472,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       ),
                     ),
                   ],
-                ),
-                // Campo oculto para URL de imagen (para compatibilidad)
-                Visibility(
-                  visible: false,
-                  child: TextFormField(
-                    controller: _imageUrlController,
-                    decoration: const InputDecoration(
-                      labelText: 'URL de imagen (opcional)',
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -390,15 +505,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             ),
             const SizedBox(height: 16),
             
-            // Contact info field
+            // Contact info field (Teléfono)
             TextFormField(
               controller: _contactInfoController,
               decoration: const InputDecoration(
-                labelText: 'Información de contacto',
-                hintText: 'Teléfono, correo, etc.',
-                prefixIcon: Icon(Icons.contact_phone),
+                labelText: 'Teléfono',
+                hintText: 'Ej: +51987654321 o 987654321',
+                prefixIcon: Icon(Icons.phone),
               ),
-              maxLines: 2,
+              keyboardType: TextInputType.phone,
+              maxLength: 12, // +51 + 9 dígitos
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa un número de teléfono';
+                }
+                // Validar formato: +51 seguido de 9 dígitos O 9 dígitos
+                if (!RegExp(r'^(\+51\d{9}|\d{9})$').hasMatch(value)) {
+                  return 'Ingresa un número válido (+51 + 9 dígitos o 9 dígitos)';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 24),
             
@@ -424,7 +550,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                         ? null
                         : () {
                             _resetForm();
-                            // Cambiar a la pestaña de listado
                             _tabController.animateTo(0);
                           },
                     style: ElevatedButton.styleFrom(
@@ -461,40 +586,66 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
       _tipoServicioController.text = entrepreneur.tipoServicio;
       _locationController.text = entrepreneur.location;
       _contactInfoController.text = entrepreneur.contactInfo;
+      _emailController.text = entrepreneur.email;
       
-      // Actualizar los valores seleccionados en los dropdowns asegurando que coincidan con las opciones disponibles
-      // Para tipo de servicio, buscar la opción más cercana
-      String tipoServicio = entrepreneur.tipoServicio;
-      _selectedTipoServicio = _tipoServicioOptions.contains(tipoServicio) 
-          ? tipoServicio 
+      // Parsear el horario de atención
+      final horarioParts = entrepreneur.horarioAtencion.split(' ');
+      if (horarioParts.isNotEmpty) {
+        final horas = horarioParts[0].split('-');
+        if (horas.length == 2) {
+          final inicio = horas[0].split(':');
+          final fin = horas[1].split(':');
+          if (inicio.length == 2 && fin.length == 2) {
+            _horaInicio = TimeOfDay(
+              hour: int.parse(inicio[0]),
+              minute: int.parse(inicio[1]),
+            );
+            _horaFin = TimeOfDay(
+              hour: int.parse(fin[0]),
+              minute: int.parse(fin[1]),
+            );
+          }
+        }
+        
+        // Parsear días
+        if (horarioParts.length > 1) {
+          final diasStr = horarioParts[1].replaceAll('(', '').replaceAll(')', '');
+          _diasSeleccionados.clear();
+          for (var i = 0; i < _diasSemana.length; i++) {
+            if (diasStr.contains(_diasSemana[i])) {
+              _diasSeleccionados.add(i + 1);
+            }
+          }
+        }
+      }
+      
+      _horarioAtencionController.text = entrepreneur.horarioAtencion;
+      _precioRangoController.text = entrepreneur.precioRango;
+      _selectedCategoria = entrepreneur.categoria;
+      _estado = entrepreneur.estado;
+      
+      // Actualizar los valores seleccionados en los dropdowns
+      _selectedTipoServicio = _tipoServicioOptions.contains(entrepreneur.tipoServicio) 
+          ? entrepreneur.tipoServicio 
           : _tipoServicioOptions.firstWhere(
-              (option) => option.toLowerCase().contains(tipoServicio.toLowerCase()) || 
-                          tipoServicio.toLowerCase().contains(option.toLowerCase()),
-              orElse: () => _tipoServicioOptions.last // Usar 'Otro' como fallback
+              (option) => option.toLowerCase().contains(entrepreneur.tipoServicio.toLowerCase()) || 
+                          entrepreneur.tipoServicio.toLowerCase().contains(option.toLowerCase()),
+              orElse: () => _tipoServicioOptions.last
             );
       
-      // Para ubicación, buscar la opción más cercana
-      String location = entrepreneur.location;
-      _selectedLocation = _locationOptions.contains(location) 
-          ? location 
+      _selectedLocation = _locationOptions.contains(entrepreneur.location) 
+          ? entrepreneur.location 
           : _locationOptions.firstWhere(
-              (option) => option.toLowerCase().contains(location.toLowerCase()) || 
-                          location.toLowerCase().contains(option.toLowerCase()),
-              orElse: () => _locationOptions.last // Usar 'Otro lugar en Capachica' como fallback
+              (option) => option.toLowerCase().contains(entrepreneur.location.toLowerCase()) || 
+                          entrepreneur.location.toLowerCase().contains(option.toLowerCase()),
+              orElse: () => _locationOptions.last
             );
       
-      // Resetear la imagen seleccionada
       _selectedImage = null;
       
-      // Si la URL de la imagen es una ruta local, cargar la imagen
       if (entrepreneur.imageUrl != null && entrepreneur.imageUrl!.startsWith('/')) {
         _selectedImage = File(entrepreneur.imageUrl!);
       }
-      
-      // Imprimir información de depuración
-      print('Editando emprendedor: ${entrepreneur.id}');
-      print('Tipo de servicio: ${entrepreneur.tipoServicio} => $_selectedTipoServicio');
-      print('Ubicación: ${entrepreneur.location} => $_selectedLocation');
     });
   }
 
@@ -507,9 +658,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
       _tipoServicioController.clear();
       _locationController.clear();
       _contactInfoController.clear();
+      _emailController.clear();
+      _horarioAtencionController.clear();
+      _precioRangoController.clear();
       _selectedTipoServicio = null;
       _selectedLocation = null;
+      _selectedCategoria = null;
       _selectedImage = null;
+      _estado = true;
+      
+      // Resetear horario
+      _horaInicio = const TimeOfDay(hour: 8, minute: 0);
+      _horaFin = const TimeOfDay(hour: 18, minute: 0);
+      _diasSeleccionados.clear();
+      _diasSeleccionados.addAll([1, 2, 3, 4, 5, 6, 7]);
     });
   }
 
@@ -532,44 +694,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
 
   Future<void> _saveEntrepreneur(EntrepreneurProvider entrepreneurProvider) async {
     if (_formKey.currentState!.validate()) {
-      // Preparar la URL de la imagen
       String? imageUrl = _imageUrlController.text.isEmpty ? null : _imageUrlController.text;
       
-      // Si tenemos una imagen seleccionada, aquí iría el código para subirla al servidor
-      // Por ahora, solo usamos la ruta local o la URL existente
       if (_selectedImage != null) {
-        // En una implementación real, aquí se subiría la imagen al servidor
-        // y se obtendría la URL para guardarla en la base de datos
-        // Por ahora, guardamos la ruta local (esto es solo para demostración)
         imageUrl = _selectedImage!.path;
       }
       
-      // Crear o actualizar el emprendedor con todos los campos requeridos por el backend
       final entrepreneur = Entrepreneur(
-        id: _currentEntrepreneur?.id ?? 0, // Usar 0 como valor predeterminado si es null
+        id: _currentEntrepreneur?.id ?? 0,
         name: _nameController.text,
         description: _descriptionController.text,
         imageUrl: imageUrl,
         tipoServicio: _selectedTipoServicio ?? _tipoServicioController.text,
         location: _selectedLocation ?? _locationController.text,
         contactInfo: _contactInfoController.text,
-        // Campos adicionales requeridos por el backend
-        email: _currentEntrepreneur?.email ?? 'contacto@example.com',
-        horarioAtencion: _currentEntrepreneur?.horarioAtencion ?? '08:00-18:00',
-        precioRango: _currentEntrepreneur?.precioRango ?? '50-100 USD',
-        categoria: _currentEntrepreneur?.categoria ?? 'Turismo',
-        estado: _currentEntrepreneur?.estado ?? true,
+        email: _emailController.text,
+        horarioAtencion: _horarioAtencionController.text,
+        precioRango: _precioRangoController.text,
+        categoria: _selectedCategoria ?? 'Turismo',
+        estado: _estado,
       );
-      
-      print('Enviando emprendedor: ${entrepreneur.toJson()}');
       
       Entrepreneur? result;
       
       if (_currentEntrepreneur == null) {
-        // Crear nuevo emprendedor
         result = await entrepreneurProvider.addEntrepreneur(entrepreneur);
       } else {
-        // Actualizar emprendedor existente
         result = await entrepreneurProvider.updateEntrepreneur(entrepreneur);
       }
       
@@ -737,6 +887,114 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             },
             child: const Text('Eliminar'),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Método para mostrar el selector de horario
+  Future<void> _showHorarioSelector() async {
+    final TimeOfDay? horaInicioSeleccionada = await showTimePicker(
+      context: context,
+      initialTime: _horaInicio,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (horaInicioSeleccionada != null) {
+      setState(() {
+        _horaInicio = horaInicioSeleccionada;
+      });
+
+      final TimeOfDay? horaFinSeleccionada = await showTimePicker(
+        context: context,
+        initialTime: _horaFin,
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              timePickerTheme: TimePickerThemeData(
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              ),
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (horaFinSeleccionada != null) {
+        setState(() {
+          _horaFin = horaFinSeleccionada;
+          _actualizarHorarioAtencion();
+        });
+      }
+    }
+  }
+
+  // Método para actualizar el texto del horario
+  void _actualizarHorarioAtencion() {
+    final diasSeleccionados = _diasSeleccionados.map((d) => _diasSemana[d - 1]).join(',');
+    _horarioAtencionController.text = '${_formatearHora(_horaInicio)}-${_formatearHora(_horaFin)} ($diasSeleccionados)';
+  }
+
+  // Método para formatear la hora
+  String _formatearHora(TimeOfDay hora) {
+    final horaStr = hora.hour.toString().padLeft(2, '0');
+    final minutoStr = hora.minute.toString().padLeft(2, '0');
+    return '$horaStr:$minutoStr';
+  }
+
+  // Método para mostrar el selector de días
+  void _showDiasSelector() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Seleccionar días de atención'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return Wrap(
+              spacing: 8,
+              children: List.generate(7, (index) {
+                final dia = index + 1;
+                final isSelected = _diasSeleccionados.contains(dia);
+                return FilterChip(
+                  label: Text(_diasSemana[index]),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _diasSeleccionados.add(dia);
+                      } else {
+                        _diasSeleccionados.remove(dia);
+                      }
+                    });
+                  },
+                );
+              }),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _actualizarHorarioAtencion();
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Aceptar'),
           ),
         ],
       ),

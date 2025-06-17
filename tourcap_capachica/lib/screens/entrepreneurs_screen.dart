@@ -76,28 +76,16 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
                             entrepreneur: entrepreneur,
                             isAdmin: isAdmin,
                             onTap: () => _showEntrepreneurDetails(context, entrepreneur),
-                            onEdit: isAdmin
-                                ? () => Navigator.pushNamed(
-                                      context,
-                                      '/admin/edit',
-                                      arguments: entrepreneur,
-                                    )
-                                : null,
-                            onDelete: isAdmin
-                                ? () => _confirmDelete(context, entrepreneur)
-                                : null,
+                            onEdit: null,
+                            onDelete: null, // Deshabilitar la eliminación en esta pantalla
+                            showEditButton: false, // Deshabilitar el botón de edición
+                            showDeleteButton: false // Deshabilitar el botón de eliminación
                           );
                         },
                       ),
       ),
-      floatingActionButton: isAdmin
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/admin/add');
-              },
-              child: const Icon(Icons.add),
-            )
-          : null,
+      // Eliminado el botón flotante de agregar para que solo esté en el panel de gestión
+      // Las operaciones CRUD solo están disponibles en el panel de administración
     );
   }
 

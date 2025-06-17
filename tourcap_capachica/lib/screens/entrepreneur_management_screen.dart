@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/entrepreneur.dart';
 import '../providers/entrepreneur_provider.dart';
 import '../widgets/custom_app_bar.dart';
@@ -271,12 +273,26 @@ class EntrepreneurForm extends StatefulWidget {
 
 class _EntrepreneurFormState extends State<EntrepreneurForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _imageUrlController = TextEditingController();
+  final _nombreController = TextEditingController();
   final _tipoServicioController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _contactInfoController = TextEditingController();
+  final _descripcionController = TextEditingController();
+  final _ubicacionController = TextEditingController();
+  final _telefonoController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _horarioAtencionController = TextEditingController();
+  final _precioRangoController = TextEditingController();
+  
+  // Para selección de categoría
+  String? _selectedCategoria;
+  final List<String> _categorias = [
+    'Turismo',
+    'Hospedaje', 
+    'Gastronomía',
+    'Artesanía',
+  ];
+  
+  // Para el estado
+  bool _estado = true;
   bool _isLoading = false;
 
   @override
@@ -284,23 +300,34 @@ class _EntrepreneurFormState extends State<EntrepreneurForm> {
     super.initState();
     // Si estamos editando, llenar el formulario con los datos del emprendedor
     if (widget.entrepreneur != null) {
-      _nameController.text = widget.entrepreneur!.name;
-      _descriptionController.text = widget.entrepreneur!.description ?? '';
-      _imageUrlController.text = widget.entrepreneur!.imageUrl ?? '';
+      _nombreController.text = widget.entrepreneur!.name;
       _tipoServicioController.text = widget.entrepreneur!.tipoServicio;
-      _locationController.text = widget.entrepreneur!.location;
-      _contactInfoController.text = widget.entrepreneur!.contactInfo;
+      _descripcionController.text = widget.entrepreneur!.description ?? '';
+      _ubicacionController.text = widget.entrepreneur!.location;
+      _telefonoController.text = widget.entrepreneur!.contactInfo;
+      _emailController.text = widget.entrepreneur!.email;
+      _horarioAtencionController.text = widget.entrepreneur!.horarioAtencion;
+      _precioRangoController.text = widget.entrepreneur!.precioRango;
+      _selectedCategoria = widget.entrepreneur!.categoria;
+      _estado = widget.entrepreneur!.estado;
+    } else {
+      // Valores por defecto para nuevos emprendedores
+      _horarioAtencionController.text = '08:00-18:00';
+      _precioRangoController.text = '50-100 USD';
+      _estado = true;
     }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _imageUrlController.dispose();
+    _nombreController.dispose();
     _tipoServicioController.dispose();
-    _locationController.dispose();
-    _contactInfoController.dispose();
+    _descripcionController.dispose();
+    _ubicacionController.dispose();
+    _telefonoController.dispose();
+    _emailController.dispose();
+    _horarioAtencionController.dispose();
+    _precioRangoController.dispose();
     super.dispose();
   }
 
@@ -344,15 +371,18 @@ class _EntrepreneurFormState extends State<EntrepreneurForm> {
                   children: [
                     // Nombre
                     TextFormField(
-                      controller: _nameController,
+                      controller: _nombreController,
                       decoration: const InputDecoration(
-                        labelText: 'Nombre',
-                        hintText: 'Ingrese el nombre del emprendedor',
+                        labelText: 'Nombre Completo',
+                        hintText: 'Ingrese el nombre completo del emprendedor',
                         prefixIcon: Icon(Icons.person),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese un nombre';
+                          return 'El nombre es requerido';
+                        }
+                        if (value.length > 100) {
+                          return 'El nombre debe tener máximo 100 caracteres';
                         }
                         return null;
                       },
@@ -378,7 +408,7 @@ class _EntrepreneurFormState extends State<EntrepreneurForm> {
                     
                     // Descripción
                     TextFormField(
-                      controller: _descriptionController,
+                      //controller: _descriptionController,
                       decoration: const InputDecoration(
                         labelText: 'Descripción',
                         hintText: 'Ingrese una descripción del emprendedor',
@@ -394,45 +424,136 @@ class _EntrepreneurFormState extends State<EntrepreneurForm> {
                     ),
                     const SizedBox(height: 16),
                     
-                    // URL de Imagen
+                    // Email
                     TextFormField(
-                      controller: _imageUrlController,
+                      controller: _emailController,
                       decoration: const InputDecoration(
-                        labelText: 'URL de Imagen',
-                        hintText: 'Ingrese la URL de la imagen',
-                        prefixIcon: Icon(Icons.image),
+                        labelText: 'Email',
+                        hintText: 'ejemplo@email.com',
+                        prefixIcon: Icon(Icons.email),
                       ),
+                      keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese una URL de imagen';
+                          return 'Por favor ingrese un email';
                         }
-                        if (!Uri.tryParse(value)!.isAbsolute) {
-                          return 'Por favor ingrese una URL válida';
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Por favor ingrese un email válido';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
                     
-                    // Ubicación
+                    // Horario de Atención
                     TextFormField(
-                      controller: _locationController,
+                      controller: _horarioAtencionController,
                       decoration: const InputDecoration(
-                        labelText: 'Ubicación',
-                        hintText: 'Ingrese la ubicación (opcional)',
-                        prefixIcon: Icon(Icons.location_on),
+                        labelText: 'Horario de Atención',
+                        hintText: 'Ej: 08:00-18:00',
+                        prefixIcon: Icon(Icons.access_time),
                       ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor ingrese el horario de atención';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     
-                    // Información de Contacto
+                    // Rango de Precios
                     TextFormField(
-                      controller: _contactInfoController,
+                      controller: _precioRangoController,
                       decoration: const InputDecoration(
-                        labelText: 'Información de Contacto',
-                        hintText: 'Ingrese información de contacto (opcional)',
-                        prefixIcon: Icon(Icons.contact_phone),
+                        labelText: 'Rango de Precios',
+                        hintText: 'Ej: 50-100 USD',
+                        prefixIcon: Icon(Icons.attach_money),
                       ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor ingrese un rango de precios';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Categoría
+                    DropdownButtonFormField<String>(
+                      value: _selectedCategoria,
+                      decoration: const InputDecoration(
+                        labelText: 'Categoría',
+                        prefixIcon: Icon(Icons.category),
+                      ),
+                      items: _categorias.map((categoria) {
+                        return DropdownMenuItem(
+                          value: categoria,
+                          child: Text(categoria),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategoria = value;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor seleccione una categoría';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Estado
+                    SwitchListTile(
+                      title: const Text('Activo'),
+                      value: _estado,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _estado = value;
+                        });
+                      },
+                      secondary: const Icon(Icons.toggle_on),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Ubicación
+                    TextFormField(
+                      controller: _ubicacionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Ubicación',
+                        hintText: 'Ingrese la ubicación del negocio',
+                        prefixIcon: Icon(Icons.location_on),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'La ubicación es requerida';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Teléfono
+                    TextFormField(
+                      controller: _telefonoController,
+                      decoration: const InputDecoration(
+                        labelText: 'Teléfono',
+                        hintText: 'Ej: +51987654321',
+                        prefixIcon: Icon(Icons.phone),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'El teléfono es requerido';
+                        }
+                        if (!RegExp(r'^\+?[0-9\s-]{10,}$').hasMatch(value)) {
+                          return 'Ingrese un número de teléfono válido';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 24),
                     
@@ -483,17 +604,17 @@ class _EntrepreneurFormState extends State<EntrepreneurForm> {
         
         final entrepreneur = Entrepreneur(
           id: isEditing ? widget.entrepreneur!.id : 0, // El backend asignará un ID para nuevos emprendedores
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          imageUrl: _imageUrlController.text.trim(),
+          name: _nombreController.text.trim(),
           tipoServicio: _tipoServicioController.text.trim(),
-          location: _locationController.text.trim(),
-          contactInfo: _contactInfoController.text.trim(),
-          email: isEditing ? widget.entrepreneur!.email : 'contacto@example.com',
-          horarioAtencion: isEditing ? widget.entrepreneur!.horarioAtencion : '08:00-18:00',
-          precioRango: isEditing ? widget.entrepreneur!.precioRango : '50-100 USD',
-          categoria: isEditing ? widget.entrepreneur!.categoria : 'Turismo',
-          estado: isEditing ? widget.entrepreneur!.estado : true,
+          description: _descripcionController.text.trim().isNotEmpty ? _descripcionController.text.trim() : null,
+          imageUrl: widget.entrepreneur?.imageUrl, // Mantener la imagen existente si estamos editando
+          location: _ubicacionController.text.trim(),
+          contactInfo: _telefonoController.text.trim(),
+          email: _emailController.text.trim(),
+          horarioAtencion: _horarioAtencionController.text.trim(),
+          precioRango: _precioRangoController.text.trim(),
+          categoria: _selectedCategoria ?? 'Turismo',
+          estado: _estado,
         );
 
         final result = isEditing
