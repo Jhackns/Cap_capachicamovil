@@ -10,7 +10,6 @@ import '../widgets/error_widget.dart';
 import '../widgets/no_results_widget.dart';
 import '../widgets/confirmation_dialog.dart';
 import '../utils/connectivity_checker.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class EntrepreneursScreen extends StatefulWidget {
   const EntrepreneursScreen({Key? key}) : super(key: key);
@@ -106,155 +105,138 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
+        backgroundColor: Colors.transparent,
         builder: (context) {
-          return DraggableScrollableSheet(
-            initialChildSize: 0.8,
-            maxChildSize: 0.95,
-            minChildSize: 0.5,
-            expand: false,
-            builder: (context, scrollController) {
-              return SingleChildScrollView(
-                controller: scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Imagen principal
-                    AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
-                        ),
-                        child: Image.network(
-                          detailedEntrepreneur.imageUrl ?? 'https://via.placeholder.com/400x300?text=No+disponible',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.error, size: 40),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Card: Información general
-                    Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          return AnimatedPadding(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            padding: MediaQuery.of(context).viewInsets + const EdgeInsets.only(top: 40),
+            child: FractionallySizedBox(
+              heightFactor: 0.92,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                child: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Stack(
                           children: [
-                            Text(
-                              detailedEntrepreneur.name,
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              detailedEntrepreneur.description ?? 'Sin descripción',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Card: Ubicación y mapa
-                    Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.location_on, size: 20, color: Theme.of(context).colorScheme.primary),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    detailedEntrepreneur.location,
-                                    style: Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 150,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: GoogleMap(
-                                  initialCameraPosition: const CameraPosition(
-                                    target: LatLng(-15.6532, -69.6966), // Coordenadas de Capachica
-                                    zoom: 12,
-                                  ),
-                                  markers: {
-                                    const Marker(
-                                      markerId: MarkerId('capachica'),
-                                      position: LatLng(-15.6532, -69.6966),
-                                      infoWindow: InfoWindow(title: 'Capachica'),
-                                    ),
+                            Hero(
+                              tag: 'entrepreneur_image_${detailedEntrepreneur.id}',
+                              child: AspectRatio(
+                                aspectRatio: 16 / 9,
+                                child: Image.network(
+                                  detailedEntrepreneur.imageUrl ?? 'https://via.placeholder.com/400x300?text=No+disponible',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.error, size: 40),
+                                    );
                                   },
-                                  zoomControlsEnabled: false,
-                                  myLocationButtonEnabled: false,
-                                  liteModeEnabled: true, // Para mejor rendimiento en modal
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 16,
+                              right: 16,
+                              child: CircleAvatar(
+                                backgroundColor: Colors.black54,
+                                child: IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.white),
+                                  onPressed: () => Navigator.of(context).pop(),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                    // Card: Contacto
-                    Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Información de contacto', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            Text('Teléfono: ${detailedEntrepreneur.contactInfo}', style: Theme.of(context).textTheme.bodyMedium),
-                            Text('Email: ${detailedEntrepreneur.email}', style: Theme.of(context).textTheme.bodyMedium),
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _AnimatedCard(
+                                child: ListTile(
+                                  leading: const Icon(Icons.info_outline, color: Colors.blueAccent),
+                                  title: Text(
+                                    detailedEntrepreneur.name,
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Text(
+                                      detailedEntrepreneur.description ?? 'Sin descripción',
+                                      style: Theme.of(context).textTheme.bodyLarge,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // Card: Ubicación y mapa (ahora con Mapbox)
+                              _AnimatedCard(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ListTile(
+                                      leading: const Icon(Icons.location_on, color: Colors.redAccent),
+                                      title: Text(
+                                        detailedEntrepreneur.location,
+                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _AnimatedCard(
+                                child: ListTile(
+                                  leading: const Icon(Icons.contact_phone, color: Colors.green),
+                                  title: Text('Información de contacto', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Teléfono: ${detailedEntrepreneur.contactInfo}', style: Theme.of(context).textTheme.bodyMedium),
+                                        Text('Email: ${detailedEntrepreneur.email}', style: Theme.of(context).textTheme.bodyMedium),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _AnimatedCard(
+                                child: ListTile(
+                                  leading: const Icon(Icons.info, color: Colors.deepPurple),
+                                  title: Text('Detalles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Categoría: ${detailedEntrepreneur.categoria}', style: Theme.of(context).textTheme.bodyMedium),
+                                        Text('Tipo de servicio: ${detailedEntrepreneur.tipoServicio}', style: Theme.of(context).textTheme.bodyMedium),
+                                        Text('Horario de atención: ${detailedEntrepreneur.horarioAtencion}', style: Theme.of(context).textTheme.bodyMedium),
+                                        Text('Rango de precios: ${detailedEntrepreneur.precioRango}', style: Theme.of(context).textTheme.bodyMedium),
+                                        const SizedBox(height: 8),
+                                        Text('Estado: ${detailedEntrepreneur.estado ? 'Activo' : 'Inactivo'}', style: Theme.of(context).textTheme.bodyMedium),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    // Card: Detalles adicionales
-                    Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Detalles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            Text('Categoría: ${detailedEntrepreneur.categoria}', style: Theme.of(context).textTheme.bodyMedium),
-                            Text('Tipo de servicio: ${detailedEntrepreneur.tipoServicio}', style: Theme.of(context).textTheme.bodyMedium),
-                            Text('Horario de atención: ${detailedEntrepreneur.horarioAtencion}', style: Theme.of(context).textTheme.bodyMedium),
-                            Text('Rango de precios: ${detailedEntrepreneur.precioRango}', style: Theme.of(context).textTheme.bodyMedium),
-                            const SizedBox(height: 8),
-                            Text('Estado: ${detailedEntrepreneur.estado ? 'Activo' : 'Inactivo'}', style: Theme.of(context).textTheme.bodyMedium),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                  ),
                 ),
-              );
-            },
+              ),
+            ),
           );
         },
       );
@@ -321,5 +303,32 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
         );
       }
     }
+  }
+}
+
+// Card animada para las secciones
+class _AnimatedCard extends StatelessWidget {
+  final Widget child;
+  const _AnimatedCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 400),
+      tween: Tween(begin: 0.95, end: 1),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Card(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: this.child,
+          ),
+        );
+      },
+      child: child,
+    );
   }
 }
