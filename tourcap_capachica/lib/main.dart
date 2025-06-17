@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
-import 'providers/entrepreneur_provider.dart';
 import 'providers/theme_provider.dart';
+
+// BLoCs
+import 'blocs/entrepreneur/entrepreneur_bloc.dart';
 
 // Screens
 import 'screens/home_screen.dart';
@@ -28,8 +31,8 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => EntrepreneurProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        BlocProvider(create: (_) => EntrepreneurBloc()),
       ],
       child: const MyApp(),
     ),

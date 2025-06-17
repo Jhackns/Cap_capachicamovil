@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../providers/entrepreneur_provider.dart';
 import '../providers/auth_provider.dart';
-// Importaciones necesarias
 import '../widgets/entrepreneur_card.dart';
 import '../models/entrepreneur.dart';
+import '../blocs/entrepreneur/entrepreneur_bloc.dart';
+import '../blocs/entrepreneur/entrepreneur_event.dart';
+import '../blocs/entrepreneur/entrepreneur_state.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -25,7 +27,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     
     // Fetch entrepreneurs when screen loads
     Future.microtask(() => 
-      Provider.of<EntrepreneurProvider>(context, listen: false).fetchEntrepreneurs()
+      context.read<EntrepreneurBloc>().add(FetchEntrepreneurs())
     );
   }
 
@@ -37,7 +39,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
 
   @override
   Widget build(BuildContext context) {
-    final entrepreneurProvider = Provider.of<EntrepreneurProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
     
     // Check if user is admin, if not redirect to home
@@ -48,113 +49,146 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Panel de Administración'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/dashboard');
-          },
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authProvider.logout();
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-              }
+    return BlocListener<EntrepreneurBloc, EntrepreneurState>(
+      listener: (context, state) {
+        if (state is EntrepreneurSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.green,
+            ),
+          );
+          if (_currentEntrepreneur != null) {
+            _resetForm();
+            _tabController.animateTo(0);
+          }
+        } else if (state is EntrepreneurError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Panel de Administración'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/dashboard');
             },
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'Emprendedores', icon: Icon(Icons.list)),
-              Tab(text: 'Gestionar', icon: Icon(Icons.edit)),
-            ],
-            labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            indicatorColor: Theme.of(context).colorScheme.primary,
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                // Entrepreneurs list tab
-                _buildEntrepreneursList(entrepreneurProvider),
-                
-                // Manage tab (Add/Edit form)
-                _buildManageEntrepreneurForm(context, entrepreneurProvider),
-              ],
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                await authProvider.logout();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                }
+              },
             ),
-          ),
-        ],
+          ],
+        ),
+        body: Column(
+          children: [
+            TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Emprendedores', icon: Icon(Icons.list)),
+                Tab(text: 'Gestionar', icon: Icon(Icons.edit)),
+              ],
+              labelColor: Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              indicatorColor: Theme.of(context).colorScheme.primary,
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Entrepreneurs list tab
+                  _buildEntrepreneursList(),
+                  
+                  // Manage tab (Add/Edit form)
+                  _buildManageEntrepreneurForm(context),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildEntrepreneursList(EntrepreneurProvider entrepreneurProvider) {
+  Widget _buildEntrepreneursList() {
     return RefreshIndicator(
-      onRefresh: () => entrepreneurProvider.fetchEntrepreneurs(),
-      child: entrepreneurProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : entrepreneurProvider.error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error al cargar emprendedores',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        entrepreneurProvider.error!,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => entrepreneurProvider.fetchEntrepreneurs(),
-                        child: const Text('Reintentar'),
-                      ),
-                    ],
+      onRefresh: () async {
+        context.read<EntrepreneurBloc>().add(FetchEntrepreneurs());
+      },
+      child: BlocBuilder<EntrepreneurBloc, EntrepreneurState>(
+        builder: (context, state) {
+          if (state is EntrepreneurLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is EntrepreneurError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error al cargar emprendedores',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                )
-              : entrepreneurProvider.entrepreneurs.isEmpty
-                  ? const Center(
-                      child: Text('No hay emprendedores disponibles'),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      itemCount: entrepreneurProvider.entrepreneurs.length,
-                      itemBuilder: (context, index) {
-                        final entrepreneur = entrepreneurProvider.entrepreneurs[index];
-                        return EntrepreneurCard(
-                          entrepreneur: entrepreneur,
-                          isAdmin: true,
-                          onTap: () {
-                            _showEntrepreneurDetails(context, entrepreneur);
-                          },
-                          onEdit: () {
-                            _tabController.animateTo(1);
-                            _showEditEntrepreneurForm(context, entrepreneur);
-                          },
-                          onDelete: () {
-                            _confirmDelete(context, entrepreneur);
-                          },
-                          showEditButton: true, // Habilitar el botón de edición
-                          showDeleteButton: true, // Habilitar el botón de eliminación
-                        );
-                      },
-                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.message,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.read<EntrepreneurBloc>().add(FetchEntrepreneurs()),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            );
+          } else if (state is EntrepreneurLoaded) {
+            if (state.entrepreneurs.isEmpty) {
+              return const Center(
+                child: Text('No hay emprendedores disponibles'),
+              );
+            }
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              itemCount: state.entrepreneurs.length,
+              itemBuilder: (context, index) {
+                final entrepreneur = state.entrepreneurs[index];
+                return EntrepreneurCard(
+                  entrepreneur: entrepreneur,
+                  isAdmin: true,
+                  onTap: () {
+                    _showEntrepreneurDetails(context, entrepreneur);
+                  },
+                  onEdit: () {
+                    _tabController.animateTo(1);
+                    _showEditEntrepreneurForm(context, entrepreneur);
+                  },
+                  onDelete: () {
+                    _confirmDelete(context, entrepreneur);
+                  },
+                  showEditButton: true,
+                  showDeleteButton: true,
+                );
+              },
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 
@@ -215,7 +249,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     'Otro'
   ];
 
-  Widget _buildManageEntrepreneurForm(BuildContext context, EntrepreneurProvider entrepreneurProvider) {
+  Widget _buildManageEntrepreneurForm(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -298,17 +332,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             TextFormField(
               controller: _emailController,
               decoration: const InputDecoration(
-                labelText: 'Email',
-                hintText: 'ejemplo@email.com',
+                labelText: 'Correo Electrónico',
+                hintText: 'ejemplo@dominio.com',
                 prefixIcon: Icon(Icons.email),
               ),
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Por favor ingresa un email';
+                  return 'Por favor ingresa un correo electrónico';
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                  return 'Por favor ingresa un email válido';
+                // Validación de correo electrónico
+                final emailRegex = RegExp(
+                  r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                );
+                if (!emailRegex.hasMatch(value)) {
+                  return 'Ingresa un correo electrónico válido';
+                }
+                if (value.length > 100) {
+                  return 'El correo no debe exceder los 100 caracteres';
                 }
                 return null;
               },
@@ -528,30 +569,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             ),
             const SizedBox(height: 24),
             
-            // Error message
-            if (entrepreneurProvider.error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  entrepreneurProvider.error!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            
             // Buttons
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: entrepreneurProvider.isLoading
-                        ? null
-                        : () {
-                            _resetForm();
-                            _tabController.animateTo(0);
-                          },
+                    onPressed: () {
+                      _resetForm();
+                      _tabController.animateTo(0);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey,
                     ),
@@ -560,13 +586,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: entrepreneurProvider.isLoading
-                        ? null
-                        : () => _saveEntrepreneur(entrepreneurProvider),
-                    child: entrepreneurProvider.isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(_currentEntrepreneur == null ? 'Agregar' : 'Actualizar'),
+                  child: BlocBuilder<EntrepreneurBloc, EntrepreneurState>(
+                    builder: (context, state) {
+                      return ElevatedButton(
+                        onPressed: state is EntrepreneurLoading
+                            ? null
+                            : () => _saveEntrepreneur(context),
+                        child: state is EntrepreneurLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(_currentEntrepreneur == null ? 'Agregar' : 'Actualizar'),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -692,60 +729,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     }
   }
 
-  Future<void> _saveEntrepreneur(EntrepreneurProvider entrepreneurProvider) async {
+  Future<void> _saveEntrepreneur(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       String? imageUrl = _imageUrlController.text.isEmpty ? null : _imageUrlController.text;
-      
-      if (_selectedImage != null) {
-        imageUrl = _selectedImage!.path;
-      }
       
       final entrepreneur = Entrepreneur(
         id: _currentEntrepreneur?.id ?? 0,
         name: _nameController.text,
         description: _descriptionController.text,
         imageUrl: imageUrl,
-        tipoServicio: _selectedTipoServicio ?? _tipoServicioController.text,
-        location: _selectedLocation ?? _locationController.text,
+        tipoServicio: _selectedTipoServicio ?? _tipoServicioOptions[0],
+        location: _selectedLocation ?? _locationOptions[0],
         contactInfo: _contactInfoController.text,
         email: _emailController.text,
+        categoria: _selectedCategoria ?? _categoriaOptions[0],
         horarioAtencion: _horarioAtencionController.text,
         precioRango: _precioRangoController.text,
-        categoria: _selectedCategoria ?? 'Turismo',
         estado: _estado,
       );
-      
-      Entrepreneur? result;
-      
+
       if (_currentEntrepreneur == null) {
-        result = await entrepreneurProvider.addEntrepreneur(entrepreneur);
-      } else {
-        result = await entrepreneurProvider.updateEntrepreneur(entrepreneur);
-      }
-      
-      if (result != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _currentEntrepreneur == null
-                  ? 'Emprendedor agregado con éxito'
-                  : 'Emprendedor actualizado con éxito',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
+        context.read<EntrepreneurBloc>().add(AddEntrepreneur(entrepreneur.toJson()));
+        // Reset form and navigate to list after successful creation
         _resetForm();
         _tabController.animateTo(0);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error: ${entrepreneurProvider.error ?? "No se pudo procesar la solicitud"}',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+      } else {
+        context.read<EntrepreneurBloc>().add(UpdateEntrepreneur(entrepreneur.toJson()));
       }
     }
   }
@@ -869,21 +878,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              final entrepreneurProvider = Provider.of<EntrepreneurProvider>(context, listen: false);
-              final result = await entrepreneurProvider.deleteEntrepreneur(entrepreneur.id);
-              
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      result
-                          ? 'Emprendedor eliminado con éxito'
-                          : 'Error al eliminar: ${entrepreneurProvider.error}',
-                    ),
-                    backgroundColor: result ? Colors.green : Colors.red,
-                  ),
-                );
-              }
+              context.read<EntrepreneurBloc>().add(DeleteEntrepreneur(entrepreneur.id));
             },
             child: const Text('Eliminar'),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
