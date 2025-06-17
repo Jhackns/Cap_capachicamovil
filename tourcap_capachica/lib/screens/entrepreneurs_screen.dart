@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../providers/auth_provider.dart';
 import '../models/entrepreneur.dart';
+import '../models/review.dart';
 import '../widgets/entrepreneur_card.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/loading_widget.dart';
@@ -13,6 +14,7 @@ import '../utils/connectivity_checker.dart';
 import '../blocs/entrepreneur/entrepreneur_bloc.dart';
 import '../blocs/entrepreneur/entrepreneur_event.dart';
 import '../blocs/entrepreneur/entrepreneur_state.dart';
+import '../widgets/reviews_section.dart';
 
 class EntrepreneursScreen extends StatefulWidget {
   const EntrepreneursScreen({Key? key}) : super(key: key);
@@ -157,7 +159,11 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
                                       backgroundColor: Colors.black54,
                                       child: IconButton(
                                         icon: const Icon(Icons.close, color: Colors.white),
-                                        onPressed: () => Navigator.of(context).pop(),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                          // Actualizar la lista de emprendedores al cerrar
+                                          context.read<EntrepreneurBloc>().add(FetchEntrepreneurs());
+                                        },
                                       ),
                                     ),
                                   ),
@@ -192,7 +198,7 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
                                           ListTile(
                                             leading: const Icon(Icons.location_on, color: Colors.redAccent),
                                             title: Text(
-                                              detailedEntrepreneur.location,
+                                              detailedEntrepreneur.location ?? 'No especificada',
                                               style: Theme.of(context).textTheme.bodyMedium,
                                             ),
                                           ),
@@ -209,8 +215,8 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text('Teléfono: ${detailedEntrepreneur.contactInfo}', style: Theme.of(context).textTheme.bodyMedium),
-                                              Text('Email: ${detailedEntrepreneur.email}', style: Theme.of(context).textTheme.bodyMedium),
+                                              Text('Teléfono: ${detailedEntrepreneur.contactInfo ?? 'No especificado'}', style: Theme.of(context).textTheme.bodyMedium),
+                                              Text('Email: ${detailedEntrepreneur.email ?? 'No especificado'}', style: Theme.of(context).textTheme.bodyMedium),
                                             ],
                                           ),
                                         ),
@@ -226,15 +232,23 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text('Categoría: ${detailedEntrepreneur.categoria}', style: Theme.of(context).textTheme.bodyMedium),
-                                              Text('Tipo de servicio: ${detailedEntrepreneur.tipoServicio}', style: Theme.of(context).textTheme.bodyMedium),
-                                              Text('Horario de atención: ${detailedEntrepreneur.horarioAtencion}', style: Theme.of(context).textTheme.bodyMedium),
-                                              Text('Rango de precios: ${detailedEntrepreneur.precioRango}', style: Theme.of(context).textTheme.bodyMedium),
+                                              Text('Categoría: ${detailedEntrepreneur.categoria ?? 'No especificada'}', style: Theme.of(context).textTheme.bodyMedium),
+                                              Text('Tipo de servicio: ${detailedEntrepreneur.tipoServicio ?? 'No especificado'}', style: Theme.of(context).textTheme.bodyMedium),
+                                              Text('Horario de atención: ${detailedEntrepreneur.horarioAtencion ?? 'No especificado'}', style: Theme.of(context).textTheme.bodyMedium),
+                                              Text('Rango de precios: ${detailedEntrepreneur.precioRango ?? 'No especificado'}', style: Theme.of(context).textTheme.bodyMedium),
                                               const SizedBox(height: 8),
                                               Text('Estado: ${detailedEntrepreneur.estado ? 'Activo' : 'Inactivo'}', style: Theme.of(context).textTheme.bodyMedium),
                                             ],
                                           ),
                                         ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Sección de reseñas
+                                    _AnimatedCard(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: ReviewsSection(reviews: Review.getDummyReviews()),
                                       ),
                                     ),
                                     const SizedBox(height: 24),
