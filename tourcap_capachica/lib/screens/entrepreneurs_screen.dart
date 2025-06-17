@@ -10,6 +10,7 @@ import '../widgets/error_widget.dart';
 import '../widgets/no_results_widget.dart';
 import '../widgets/confirmation_dialog.dart';
 import '../utils/connectivity_checker.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class EntrepreneursScreen extends StatefulWidget {
   const EntrepreneursScreen({Key? key}) : super(key: key);
@@ -89,96 +90,179 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
     );
   }
 
-  void _showEntrepreneurDetails(BuildContext context, Entrepreneur entrepreneur) {
-    showModalBottomSheet(
+  Future<void> _showEntrepreneurDetails(BuildContext context, Entrepreneur entrepreneur) async {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          minChildSize: 0.5,
-          expand: false,
-          builder: (context, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Image
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Image.network(
-                      entrepreneur.imageUrl ?? 'https://via.placeholder.com/400x300?text=No+disponible',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.error, size: 40),
-                        );
-                      },
-                    ),
-                  ),
-                  
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entrepreneur.name,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (entrepreneur.location.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.primary),
-                              const SizedBox(width: 4),
-                              Text(
-                                entrepreneur.location,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        Text(
-                          entrepreneur.description ?? 'Sin descripción',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        if (entrepreneur.contactInfo.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Información de contacto',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            entrepreneur.contactInfo,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
+
+    final provider = Provider.of<EntrepreneurProvider>(context, listen: false);
+    final detailedEntrepreneur = await provider.getEntrepreneurById(entrepreneur.id);
+
+    if (mounted) Navigator.of(context).pop(); // Cierra el loading
+
+    if (detailedEntrepreneur != null && mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (context) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.8,
+            maxChildSize: 0.95,
+            minChildSize: 0.5,
+            expand: false,
+            builder: (context, scrollController) {
+              return SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Imagen principal
+                    AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                        child: Image.network(
+                          detailedEntrepreneur.imageUrl ?? 'https://via.placeholder.com/400x300?text=No+disponible',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.error, size: 40),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Card: Información general
+                    Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              detailedEntrepreneur.name,
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              detailedEntrepreneur.description ?? 'Sin descripción',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Card: Ubicación y mapa
+                    Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.location_on, size: 20, color: Theme.of(context).colorScheme.primary),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    detailedEntrepreneur.location,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 150,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: GoogleMap(
+                                  initialCameraPosition: const CameraPosition(
+                                    target: LatLng(-15.6532, -69.6966), // Coordenadas de Capachica
+                                    zoom: 12,
+                                  ),
+                                  markers: {
+                                    const Marker(
+                                      markerId: MarkerId('capachica'),
+                                      position: LatLng(-15.6532, -69.6966),
+                                      infoWindow: InfoWindow(title: 'Capachica'),
+                                    ),
+                                  },
+                                  zoomControlsEnabled: false,
+                                  myLocationButtonEnabled: false,
+                                  liteModeEnabled: true, // Para mejor rendimiento en modal
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Card: Contacto
+                    Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Información de contacto', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Text('Teléfono: ${detailedEntrepreneur.contactInfo}', style: Theme.of(context).textTheme.bodyMedium),
+                            Text('Email: ${detailedEntrepreneur.email}', style: Theme.of(context).textTheme.bodyMedium),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Card: Detalles adicionales
+                    Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Detalles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Text('Categoría: ${detailedEntrepreneur.categoria}', style: Theme.of(context).textTheme.bodyMedium),
+                            Text('Tipo de servicio: ${detailedEntrepreneur.tipoServicio}', style: Theme.of(context).textTheme.bodyMedium),
+                            Text('Horario de atención: ${detailedEntrepreneur.horarioAtencion}', style: Theme.of(context).textTheme.bodyMedium),
+                            Text('Rango de precios: ${detailedEntrepreneur.precioRango}', style: Theme.of(context).textTheme.bodyMedium),
+                            const SizedBox(height: 8),
+                            Text('Estado: ${detailedEntrepreneur.estado ? 'Activo' : 'Inactivo'}', style: Theme.of(context).textTheme.bodyMedium),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo cargar la información completa del emprendedor.')),
+      );
+    }
   }
 
   void _confirmDelete(BuildContext context, Entrepreneur entrepreneur) async {
