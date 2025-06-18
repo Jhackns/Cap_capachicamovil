@@ -14,8 +14,11 @@ class AuthService {
   // Login user
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
+      print('Intentando iniciar sesión en: ${ApiConfig.baseUrl}${ApiConfig.apiPrefix}${ApiConfig.login}');
+      print('Datos de login - email: $email');
+      
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/login'),
+        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.apiPrefix}${ApiConfig.login}'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': email,
@@ -23,17 +26,57 @@ class AuthService {
         }),
       );
 
+      print('Respuesta del servidor - Status: ${response.statusCode}');
+      print('Cuerpo de la respuesta: ${response.body}');
+
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return {
-          'user': User.fromJson(data['user']),
-          'token': data['token'],
-        };
+        try {
+          final Map<String, dynamic> data = json.decode(response.body) as Map<String, dynamic>;
+          
+          // Verificar si el token está presente
+          if (data['token'] == null) {
+            throw Exception('No se recibió el token de autenticación');
+          }
+          
+          // Extraer el token (quitando 'Bearer ' si está presente)
+          String token = data['token'].toString().replaceFirst('Bearer ', '');
+          
+          // Crear un mapa con la información del usuario (si está disponible)
+          String? message = data['message']?.toString();
+          String? rol = data['rol']?.toString();
+          
+          // Guardar el token y la información del usuario
+          await _storage.write(key: _tokenKey, value: token);
+          await _storage.write(key: _roleKey, value: rol ?? 'USER');
+          
+          // Si hay un mensaje de bienvenida, mostrarlo
+          if (message != null) {
+            print('Mensaje de bienvenida: $message');
+          }
+          
+          // Devolver la información relevante
+          return {
+            'message': message,
+            'rol': rol,
+            'token': token,
+          };
+        } catch (e) {
+          print('Error al procesar la respuesta: $e');
+          throw Exception('Error al procesar la respuesta del servidor: $e');
+        }
       } else {
-        throw Exception('Error de autenticación: ${response.body}');
+        String errorMessage = 'Error de autenticación (${response.statusCode})';
+        try {
+          final errorData = json.decode(response.body) as Map<String, dynamic>;
+          errorMessage = errorData['message']?.toString() ?? response.body;
+        } catch (_) {
+          errorMessage = response.body;
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      print('Error en el proceso de login: $e');
+      rethrow;
     }
   }
 
