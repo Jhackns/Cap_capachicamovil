@@ -10,12 +10,15 @@ class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   String? _error;
+  bool _isAuthenticated = false;
+  String? _token;
 
   User? get currentUser => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isAuthenticated => _user != null;
+  bool get isAuthenticated => _isAuthenticated;
   bool get isAdmin => _user?.isAdmin ?? false;
+  String? get token => _token;
 
   AuthProvider() {
     _checkAuthStatus();
@@ -139,6 +142,8 @@ class AuthProvider with ChangeNotifier {
     try {
       await _authService.logout();
       _user = null;
+      _isAuthenticated = false;
+      _token = null;
       // No intentamos navegar aquí, lo haremos desde la UI
     } catch (e) {
       _error = e.toString();
@@ -150,6 +155,12 @@ class AuthProvider with ChangeNotifier {
 
   void clearError() {
     _error = null;
+    notifyListeners();
+  }
+
+  void setAuth(bool isAuthenticated, {String? token}) {
+    _isAuthenticated = isAuthenticated;
+    _token = token;
     notifyListeners();
   }
 }

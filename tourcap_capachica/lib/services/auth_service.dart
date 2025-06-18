@@ -9,60 +9,30 @@ class AuthService {
   final String _tokenKey = 'jwt_token';
   final String _userKey = 'user_data';
   final String _roleKey = 'user_role';
+  final _baseUrl = ApiConfig.baseUrl;
 
   // Login user
-  Future<User?> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse(ApiConfig.getLoginUrl()),
+        Uri.parse('$_baseUrl/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': email,
           'password': password,
         }),
       );
-      
-      print('Login response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        String token = data['token'] as String;
-        
-        // Imprimir para depuración
-        print('Token recibido del servidor: $token');
-        
-        // Quitar el prefijo 'Bearer ' si ya viene incluido
-        if (token.startsWith('Bearer ')) {
-          token = token.substring(7);
-          print('Token sin prefijo Bearer: $token');
-        }
-        
-        // Crear usuario a partir de la información del token o respuesta
-        final userId = data['id'] ?? 1; // Obtener del token o respuesta
-        final userEmail = email;
-        final username = data['username'] ?? email.split('@')[0];
-        final isAdmin = data['rol'] == 'ADMIN';
-        
-        final user = User(
-          id: userId,
-          username: username,
-          email: userEmail,
-          isAdmin: isAdmin,
-          token: token,
-        );
-        
-        // Guardar datos en el almacenamiento seguro
-        await _storage.write(key: _tokenKey, value: token);
-        await _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
-        await _storage.write(key: _roleKey, value: isAdmin ? 'ADMIN' : 'REGULAR');
-        
-        return user;
+        return {
+          'user': User.fromJson(data['user']),
+          'token': data['token'],
+        };
       } else {
-        print('Error en login: ${response.body}');
-        throw Exception('Error en el inicio de sesión: ${response.statusCode}');
+        throw Exception('Error de autenticación: ${response.body}');
       }
     } catch (e) {
-      print('Error en login: $e');
       throw Exception('Error de conexión: $e');
     }
   }
@@ -184,14 +154,7 @@ class AuthService {
 
   // Logout user
   Future<void> logout() async {
-    try {
-      await _storage.delete(key: _tokenKey);
-      await _storage.delete(key: _userKey);
-      await _storage.delete(key: _roleKey);
-    } catch (e) {
-      print('Error en logout: $e');
-      throw Exception('Error al cerrar sesión: $e');
-    }
+    // Implementar lógica de logout si es necesario
   }
 
   // Check if user is logged in

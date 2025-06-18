@@ -25,12 +25,14 @@ class ReviewCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundImage: review.userImage != null
-                      ? NetworkImage(review.userImage!)
-                      : null,
-                  child: review.userImage == null
-                      ? Text(review.userName[0].toUpperCase())
-                      : null,
+                  backgroundColor: Colors.grey[200],
+                  child: Text(
+                    review.nombreAutor[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -38,14 +40,14 @@ class ReviewCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        review.userName,
+                        review.nombreAutor,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
                       Text(
-                        DateFormat('dd/MM/yyyy').format(review.date),
+                        review.formattedDate,
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 12,
@@ -63,7 +65,7 @@ class ReviewCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      review.rating.toString(),
+                      review.puntuacion.toString(),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -75,7 +77,7 @@ class ReviewCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              review.comment,
+              review.comentario,
               style: const TextStyle(fontSize: 14),
             ),
           ],

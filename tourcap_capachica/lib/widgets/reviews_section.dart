@@ -12,7 +12,7 @@ class ReviewsSection extends StatelessWidget {
 
   double get averageRating {
     if (reviews.isEmpty) return 0;
-    return reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
+    return reviews.map((r) => r.puntuacion ?? 0).reduce((a, b) => a + b) / reviews.length;
   }
 
   @override
@@ -74,7 +74,7 @@ class ReviewsSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: List.generate(5, (index) {
                     final rating = 5 - index;
-                    final count = reviews.where((r) => r.rating == rating).length;
+                    final count = reviews.where((r) => (r.puntuacion ?? 0) == rating).length;
                     final percentage = reviews.isEmpty
                         ? 0.0
                         : count / reviews.length;

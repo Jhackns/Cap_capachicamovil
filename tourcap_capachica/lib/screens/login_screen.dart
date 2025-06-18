@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/auth_service.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_app_bar.dart';
 
@@ -18,8 +19,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _usernameController = TextEditingController();
+  final _authService = AuthService();
   bool _isLogin = true;
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -169,11 +173,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         
                         // Error message
-                        if (authProvider.error != null)
+                        if (_error != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),
                             child: Text(
-                              authProvider.error!,
+                              _error!,
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.error,
                                 fontSize: 14,
@@ -184,13 +188,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         
                         // Submit button
                         ElevatedButton(
-                          onPressed: authProvider.isLoading
-                              ? null
-                              : () => _submitForm(authProvider),
+                          onPressed: _isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          child: authProvider.isLoading
+                          child: _isLoading
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
@@ -242,22 +244,31 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _submitForm(AuthProvider authProvider) async {
+  Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
-      
-      bool success;
-      
-      if (_isLogin) {
-        success = await authProvider.login(email, password);
-      } else {
-        final username = _usernameController.text.trim();
-        success = await authProvider.register(username, email, password);
-      }
-      
-      if (success && mounted) {
-        Navigator.pushReplacementNamed(context, '/dashboard');
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      try {
+        final result = await _authService.login(_emailController.text, _passwordController.text);
+        if (mounted) {
+          context.read<AuthProvider>().setAuth(true, token: result['token']);
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _error = e.toString();
+          });
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }

@@ -15,6 +15,8 @@ import '../blocs/entrepreneur/entrepreneur_bloc.dart';
 import '../blocs/entrepreneur/entrepreneur_event.dart';
 import '../blocs/entrepreneur/entrepreneur_state.dart';
 import '../widgets/reviews_section.dart';
+import '../services/review_service.dart';
+import '../widgets/review_form.dart';
 
 class EntrepreneursScreen extends StatefulWidget {
   const EntrepreneursScreen({Key? key}) : super(key: key);
@@ -100,6 +102,8 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
   }
 
   Future<void> _showEntrepreneurDetails(BuildContext context, Entrepreneur entrepreneur) async {
+    print('Mostrando detalles del emprendedor ID: ${entrepreneur.id}'); // Log para depuración
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -120,6 +124,8 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
             builder: (context, state) {
               if (state is EntrepreneurDetailLoaded) {
                 final detailedEntrepreneur = state.entrepreneur;
+                print('Detalles cargados para emprendedor ID: ${detailedEntrepreneur.id}'); // Log para depuración
+                
                 return AnimatedPadding(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOut,
@@ -248,7 +254,47 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
                                     _AnimatedCard(
                                       child: Padding(
                                         padding: const EdgeInsets.all(16.0),
-                                        child: ReviewsSection(reviews: Review.getDummyReviews()),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  'Reseñas',
+                                                  style: Theme.of(context).textTheme.titleLarge,
+                                                ),
+                                                if (Provider.of<AuthProvider>(context, listen: false).isAuthenticated)
+                                                  ElevatedButton.icon(
+                                                    onPressed: () => _showAddReviewDialog(context, detailedEntrepreneur.id),
+                                                    icon: const Icon(Icons.add),
+                                                    label: const Text('Añadir Reseña'),
+                                                  ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            FutureBuilder<List<Review>>(
+                                              future: ReviewService().getReviewsByEntrepreneur(detailedEntrepreneur.id),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                                  return const Center(child: CircularProgressIndicator());
+                                                }
+                                                if (snapshot.hasError) {
+                                                  print('Error al cargar reseñas: ${snapshot.error}'); // Log para depuración
+                                                  return Center(
+                                                    child: Text('Error: ${snapshot.error}'),
+                                                  );
+                                                }
+                                                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                                                  return const Center(
+                                                    child: Text('No hay reseñas aún'),
+                                                  );
+                                                }
+                                                return ReviewsSection(reviews: snapshot.data!);
+                                              },
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 24),
@@ -275,6 +321,44 @@ class _EntrepreneursScreenState extends State<EntrepreneursScreen> {
         },
       );
     }
+  }
+
+  void _showAddReviewDialog(BuildContext context, int entrepreneurId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: ReviewForm(
+            entrepreneurId: entrepreneurId,
+            onSubmit: (review) async {
+              try {
+                final token = Provider.of<AuthProvider>(context, listen: false).token;
+                if (token != null) {
+                  await ReviewService().createReview(review, token);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reseña creada exitosamente')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al crear la reseña: $e')),
+                  );
+                }
+              }
+            },
+          ),
+        );
+      },
+    );
   }
 }
 
