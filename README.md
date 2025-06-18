@@ -6,7 +6,6 @@ TourCap Capachica es una aplicación móvil desarrollada en Flutter que ofrece u
 
 ## ✨ Características Principales
 
-- 📍 Mapa interactivo con puntos de interés turístico
 - 🏨 Información detallada de hoteles y hospedajes
 - 🍽️ Directorio de restaurantes y gastronomía local
 - 🎭 Eventos culturales y actividades turísticas
