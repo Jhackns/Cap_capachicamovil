@@ -23,6 +23,7 @@ import 'screens/categories/gastronomia_screen.dart';
 import 'screens/categories/turismo_screen.dart';
 import 'screens/categories/artesania_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/main/main_navigation.dart';
 
 // Utils
 import 'utils/app_theme.dart';
@@ -52,10 +53,11 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeProvider.themeMode,
-        initialRoute: '/home',
+        initialRoute: '/main',
         routes: {
-          '/splash': (context) => const SplashScreen(),
+          '/main': (context) => const MainNavigation(),
           '/home': (context) => const HomeScreen(),
+          '/splash': (context) => const SplashScreen(),
           '/entrepreneurs': (context) => const EntrepreneursScreen(),
           '/login': (context) => const LoginScreen(),
           '/dashboard': (context) => const DashboardScreen(),
