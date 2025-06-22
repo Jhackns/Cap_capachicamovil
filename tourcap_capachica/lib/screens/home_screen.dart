@@ -138,7 +138,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Descubre la belleza y cultura de Capachica, una península mágica en el Lago Titicaca. Explora nuestros emprendimientos locales y vive una experiencia única.',
+                            'Un paraíso donde la naturaleza, cultura y tradición se fusionan en una experiencia única e inolvidable.',
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
                           const SizedBox(height: 24),
