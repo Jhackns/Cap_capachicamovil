@@ -271,14 +271,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         
         if (mounted && success) {
-          final authProvider = context.read<AuthProvider>();
-          
-          // Redirigir según el rol del usuario
-          if (authProvider.isAdmin) {
-            Navigator.of(context).pushReplacementNamed('/admin-dashboard');
-          } else {
-            Navigator.of(context).pushReplacementNamed('/dashboard');
-          }
+          // Redirigir siempre al dashboard unificado
+          Navigator.of(context).pushReplacementNamed('/dashboard');
         }
       } catch (e) {
         if (mounted) {

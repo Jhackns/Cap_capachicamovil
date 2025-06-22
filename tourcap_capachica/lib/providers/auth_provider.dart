@@ -21,10 +21,10 @@ class AuthProvider with ChangeNotifier {
   String? get token => _token;
 
   AuthProvider() {
-    _checkAuthStatus();
+    checkAuthStatus();
   }
 
-  Future<void> _checkAuthStatus() async {
+  Future<void> checkAuthStatus() async {
     _isLoading = true;
     notifyListeners();
 

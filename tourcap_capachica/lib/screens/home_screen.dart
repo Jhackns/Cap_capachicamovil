@@ -32,11 +32,10 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
+              final isLoggedIn = Provider.of<AuthProvider>(context, listen: false).isAuthenticated;
               if (isLoggedIn) {
-                // Si está autenticado, ir al dashboard
                 Navigator.pushNamed(context, '/dashboard');
               } else {
-                // Si no está autenticado, ir a login
                 Navigator.pushNamed(context, '/login');
               }
             },
