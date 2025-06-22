@@ -20,17 +20,64 @@ class HomeScreen extends StatelessWidget {
       'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/17/ce/73/23/island-amantani.jpg?w=400&h=300&s=1',
     ];
 
+    // Imágenes para la sección Momentos
+    final List<String> momentosImages = [
+      'https://www.titicaca-peru.com/img/peni_capachica1.jpg',
+      'https://img.freepik.com/fotos-premium/vista-sobre-paisaje-lago-titicaca_653449-9944.jpg',
+      'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/17/ce/73/23/island-amantani.jpg?w=400&h=300&s=1',
+      'https://www.titicaca-peru.com/img/peni_capachica1.jpg',
+    ];
+
+    // Imágenes para las comunidades
+    final List<Map<String, String>> comunidades = [
+      {'nombre': 'Llachón', 'imagen': 'https://www.titicaca-peru.com/img/peni_capachica1.jpg'},
+      {'nombre': 'Cotos', 'imagen': 'https://img.freepik.com/fotos-premium/vista-sobre-paisaje-lago-titicaca_653449-9944.jpg'},
+      {'nombre': 'Siale', 'imagen': 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/17/ce/73/23/island-amantani.jpg?w=400&h=300&s=1'},
+      {'nombre': 'Hilata', 'imagen': 'https://www.titicaca-peru.com/img/peni_capachica1.jpg'},
+      {'nombre': 'Isañura', 'imagen': 'https://img.freepik.com/fotos-premium/vista-sobre-paisaje-lago-titicaca_653449-9944.jpg'},
+      {'nombre': 'San Cristóbal', 'imagen': 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/17/ce/73/23/island-amantani.jpg?w=400&h=300&s=1'},
+      {'nombre': 'Escallani', 'imagen': 'https://www.titicaca-peru.com/img/peni_capachica1.jpg'},
+      {'nombre': 'Chillora', 'imagen': 'https://img.freepik.com/fotos-premium/vista-sobre-paisaje-lago-titicaca_653449-9944.jpg'},
+      {'nombre': 'Yapura', 'imagen': 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/17/ce/73/23/island-amantani.jpg?w=400&h=300&s=1'},
+      {'nombre': 'Collasuyo', 'imagen': 'https://www.titicaca-peru.com/img/peni_capachica1.jpg'},
+      {'nombre': 'Miraflores', 'imagen': 'https://img.freepik.com/fotos-premium/vista-sobre-paisaje-lago-titicaca_653449-9944.jpg'},
+      {'nombre': 'Villa Lago', 'imagen': 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/17/ce/73/23/island-amantani.jpg?w=400&h=300&s=1'},
+      {'nombre': 'Capano', 'imagen': 'https://www.titicaca-peru.com/img/peni_capachica1.jpg'},
+      {'nombre': 'Ccotos', 'imagen': 'https://img.freepik.com/fotos-premium/vista-sobre-paisaje-lago-titicaca_653449-9944.jpg'},
+      {'nombre': 'Yancaco', 'imagen': 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/17/ce/73/23/island-amantani.jpg?w=400&h=300&s=1'},
+      {'nombre': 'Capachica Central', 'imagen': 'https://www.titicaca-peru.com/img/peni_capachica1.jpg'},
+    ];
+
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // TODO: Implementar chatbot en el futuro
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Chat en desarrollo...'),
+              backgroundColor: Color(0xFF9C27B0),
+            ),
+          );
+        },
+        icon: const Icon(Icons.chat),
+        label: const Text('Chat'),
+        backgroundColor: const Color(0xFF9C27B0),
+      ),
       appBar: AppBar(
-        title: const Text('Tour Capachica'),
+        title: const Text(
+          'Tour Capachica',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
+        backgroundColor: const Color(0xFF6A1B9A),
         actions: [
-          // Botón para cambiar entre tema claro y oscuro
           const ThemeSwitcher(),
           const SizedBox(width: 8),
-          // Icono de usuario con navegación condicional
           IconButton(
-            icon: const Icon(Icons.person),
+            icon: const Icon(Icons.person, color: Colors.white),
             onPressed: () {
               final isLoggedIn = Provider.of<AuthProvider>(context, listen: false).isAuthenticated;
               if (isLoggedIn) {
@@ -43,13 +90,14 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              Theme.of(context).colorScheme.background,
+              Color(0xFF6A1B9A),
+              Color(0xFF9C27B0),
+              Color(0xFFE1BEE7),
             ],
           ),
         ),
@@ -72,10 +120,10 @@ class HomeScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 3),
+                                  color: Colors.black.withOpacity(0.3),
+                                  spreadRadius: 2,
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -85,7 +133,9 @@ class HomeScreen extends StatelessWidget {
                                 imageUrl: url,
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(),
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
                                 ),
                                 errorWidget: (context, url, error) => Container(
                                   color: Colors.grey[300],
@@ -120,7 +170,7 @@ class HomeScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: Card(
-                    elevation: 4,
+                    elevation: 8,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -133,24 +183,32 @@ class HomeScreen extends StatelessWidget {
                             '¡Bienvenido a Capachica!',
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: const Color(0xFF6A1B9A),
                             ),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Un paraíso donde la naturaleza, cultura y tradición se fusionan en una experiencia única e inolvidable.',
-                            style: Theme.of(context).textTheme.bodyLarge,
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Colors.black87,
+                            ),
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
-                            icon: const Icon(Icons.people),
-                            label: const Text('Ver Emprendedores'),
+                            icon: const Icon(Icons.explore),
+                            label: const Text('Ir a Explorar!'),
                             style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF9C27B0),
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             onPressed: () {
-                              Navigator.pushNamed(context, '/entrepreneurs');
+                              // Navegar a la pestaña Explorar
+                              Navigator.pushNamed(context, '/explore');
                             },
                           ),
                         ],
@@ -159,51 +217,55 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 
-                // Sección de características
+                // Sección Momentos
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Descubre Capachica',
+                        'Momentos',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        children: [
-                          _buildFeatureCard(
-                            context,
-                            icon: Icons.hotel,
-                            title: 'Hospedaje',
-                            description: 'Encuentra alojamiento con familias locales',
-                          ),
-                          _buildFeatureCard(
-                            context,
-                            icon: Icons.restaurant,
-                            title: 'Gastronomía',
-                            description: 'Prueba platos típicos de la región',
-                          ),
-                          _buildFeatureCard(
-                            context,
-                            icon: Icons.landscape,
-                            title: 'Turismo',
-                            description: 'Visita lugares emblemáticos',
-                          ),
-                          _buildFeatureCard(
-                            context,
-                            icon: Icons.shopping_bag,
-                            title: 'Artesanía',
-                            description: 'Adquiere productos locales',
-                          ),
-                        ],
+                      SizedBox(
+                        height: 120,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: momentosImages.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: CachedNetworkImage(
+                                imageUrl: momentosImages[index],
+                                width: 160,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  width: 160,
+                                  height: 120,
+                                  color: Colors.grey[300],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  width: 160,
+                                  height: 120,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.error),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -211,70 +273,187 @@ class HomeScreen extends StatelessWidget {
                 
                 const SizedBox(height: 32),
                 
-                // Botón de inicio de sesión
+                // Sección Historia
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Historia',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            'Capachica es una península situada en el lago Titicaca con una rica historia preinca e inca. Durante la colonia española, se establecieron haciendas que luego dieron paso a comunidades campesinas que hoy preservan su cultura y patrimonio. Las familias de Capachica han mantenido sus tradiciones ancestrales por generaciones, dedicándose principalmente a la agricultura, pesca y ahora al turismo vivencial.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.black87,
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.justify,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 
+                const SizedBox(height: 32),
+                
+                // Sección Comunidades
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Comunidades',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1.2,
+                        ),
+                        itemCount: comunidades.length,
+                        itemBuilder: (context, index) {
+                          return Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                    child: CachedNetworkImage(
+                                      imageUrl: comunidades[index]['imagen']!,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.grey[300],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF9C27B0)),
+                                          ),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) => Container(
+                                        color: Colors.grey[300],
+                                        child: const Icon(Icons.error),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    comunidades[index]['nombre']!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF6A1B9A),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // Sección Localización
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Localización',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.grey[200],
+                          ),
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.map,
+                                  size: 64,
+                                  color: Color(0xFF9C27B0),
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Mapa en desarrollo',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF6A1B9A),
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Próximamente: Mapa en tiempo real',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 
                 const SizedBox(height: 32),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          // Navegar a la sección correspondiente según el ícono
-          if (icon == Icons.hotel) {
-            Navigator.pushNamed(context, '/hospedaje');
-          } else if (icon == Icons.restaurant) {
-            Navigator.pushNamed(context, '/gastronomia');
-          } else if (icon == Icons.landscape) {
-            Navigator.pushNamed(context, '/turismo');
-          } else if (icon == Icons.shopping_bag) {
-            Navigator.pushNamed(context, '/artesania');
-          }
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 40,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
           ),
         ),
       ),
