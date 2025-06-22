@@ -1,11 +1,12 @@
 import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class Review {
   final int id;
   final String nombreAutor;
   final String comentario;
   final int puntuacion;
-  final String? imagenes;
+  final List<String>? imagenes;
   final int emprendedorId;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -22,15 +23,33 @@ class Review {
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
+    List<String> imagenes = [];
+    if (json['imagenes'] != null) {
+      if (json['imagenes'] is List) {
+        imagenes = List<String>.from(json['imagenes']);
+      } else if (json['imagenes'] is String) {
+        // Si es un string, intentar parsearlo como JSON
+        try {
+          final parsed = jsonDecode(json['imagenes']);
+          if (parsed is List) {
+            imagenes = List<String>.from(parsed);
+          }
+        } catch (e) {
+          // Si no se puede parsear, usar como string único
+          imagenes = [json['imagenes']];
+        }
+      }
+    }
+
     return Review(
       id: json['id'],
-      nombreAutor: json['nombreAutor'],
+      nombreAutor: json['nombre_autor'] ?? json['nombreAutor'] ?? '',
       comentario: json['comentario'],
       puntuacion: json['puntuacion'],
-      imagenes: json['imagenes'],
-      emprendedorId: json['emprendedorId'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      imagenes: imagenes,
+      emprendedorId: json['emprendedor_id'] ?? json['emprendedorId'],
+      createdAt: DateTime.parse(json['created_at'] ?? json['createdAt']),
+      updatedAt: DateTime.parse(json['updated_at'] ?? json['updatedAt']),
     );
   }
 
@@ -59,7 +78,7 @@ class Review {
         nombreAutor: 'María García',
         comentario: 'Excelente servicio, muy atentos y el lugar es hermoso. Definitivamente volveré.',
         puntuacion: 5,
-        imagenes: 'https://randomuser.me/api/portraits/women/1.jpg',
+        imagenes: ['https://randomuser.me/api/portraits/women/1.jpg'],
         emprendedorId: 1,
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
         updatedAt: DateTime.now().subtract(const Duration(days: 2)),
@@ -69,7 +88,7 @@ class Review {
         nombreAutor: 'Juan Pérez',
         comentario: 'Buen lugar, la comida es deliciosa y el ambiente es muy agradable.',
         puntuacion: 4,
-        imagenes: 'https://randomuser.me/api/portraits/men/1.jpg',
+        imagenes: ['https://randomuser.me/api/portraits/men/1.jpg'],
         emprendedorId: 1,
         createdAt: DateTime.now().subtract(const Duration(days: 5)),
         updatedAt: DateTime.now().subtract(const Duration(days: 5)),
@@ -79,7 +98,7 @@ class Review {
         nombreAutor: 'Ana Martínez',
         comentario: 'Muy buena atención y precios accesibles. Lo recomiendo.',
         puntuacion: 4,
-        imagenes: 'https://randomuser.me/api/portraits/women/2.jpg',
+        imagenes: ['https://randomuser.me/api/portraits/women/2.jpg'],
         emprendedorId: 1,
         createdAt: DateTime.now().subtract(const Duration(days: 7)),
         updatedAt: DateTime.now().subtract(const Duration(days: 7)),

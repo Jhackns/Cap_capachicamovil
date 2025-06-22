@@ -44,17 +44,16 @@ class ResenasController extends Controller
     // POST /api/resenas (con imágenes)
     public function store(Request $request)
     {
-        // Verificar permiso para crear reseñas
-        if (!Auth::user()->can('resena_create')) {
+        // Validar que el usuario esté autenticado
+        if (!Auth::check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No tienes permisos para crear reseñas'
-            ], 403);
+                'message' => 'Debes iniciar sesión para crear reseñas'
+            ], 401);
         }
 
         $validated = $request->validate([
             'emprendedor_id' => 'required|exists:emprendedores,id',
-            'nombre_autor' => 'required|string|max:100',
             'comentario' => 'required|string|min:10',
             'puntuacion' => 'required|integer|between:1,5',
             'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg|max:5120'
@@ -65,16 +64,14 @@ class ResenasController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 $path = $imagen->store('resenas', 'public');
-                // Generar URL absoluta
-                $url = asset('storage/' . $path);
-                $imagenesPaths[] = $url;
+                $imagenesPaths[] = $path;
             }
         }
 
-        // Crear nueva reseña con un nuevo ID
+        // Crear nueva reseña
         $resena = new Resenas();
         $resena->emprendedor_id = $validated['emprendedor_id'];
-        $resena->nombre_autor = $validated['nombre_autor'];
+        $resena->nombre_autor = Auth::user()->name; // Usar el nombre del usuario autenticado
         $resena->comentario = $validated['comentario'];
         $resena->puntuacion = $validated['puntuacion'];
         $resena->imagenes = $imagenesPaths;
@@ -82,7 +79,11 @@ class ResenasController extends Controller
         $resena->estado = 'pendiente';
         $resena->save();
 
-        return response()->json($resena, 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Reseña creada exitosamente',
+            'data' => $resena
+        ], 201);
     }
 
     // PUT /api/emprendedores/{emprendedorId}/resenas/{resenaId}/estado
@@ -97,10 +98,12 @@ class ResenasController extends Controller
                 ->where('emprendedor_id', $emprendedorId)
                 ->firstOrFail();
 
-            // Verificar permisos
-            if (!Auth::user()->can('resena_manage')) {
-                // Si no tiene el permiso general, verificar si es administrador del emprendimiento
-                $this->authorize('gestionarResenas', $emprendedor);
+            // Verificar que el usuario esté autenticado
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Debes iniciar sesión para realizar esta acción'
+                ], 401);
             }
 
             // Validar el estado
@@ -126,11 +129,6 @@ class ResenasController extends Controller
                 'success' => false,
                 'message' => 'No se encontró el emprendedor o la reseña especificada'
             ], 404);
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permisos para realizar esta acción'
-            ], 403);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -163,10 +161,12 @@ class ResenasController extends Controller
                 ->where('emprendedor_id', $emprendedorId)
                 ->firstOrFail();
 
-            // Verificar permisos
-            if (!Auth::user()->can('resena_delete')) {
-                // Si no tiene el permiso general, verificar si es administrador del emprendimiento
-                $this->authorize('gestionarResenas', $emprendedor);
+            // Verificar que el usuario esté autenticado
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Debes iniciar sesión para realizar esta acción'
+                ], 401);
             }
 
             // Eliminar imágenes asociadas
@@ -193,11 +193,6 @@ class ResenasController extends Controller
                 'success' => false,
                 'message' => 'No se encontró el emprendedor o la reseña especificada'
             ], 404);
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permisos para realizar esta acción'
-            ], 403);
         } catch (\Exception $e) {
             Log::error('Error al eliminar reseña', [
                 'error' => $e->getMessage(),

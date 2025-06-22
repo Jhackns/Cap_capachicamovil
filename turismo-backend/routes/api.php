@@ -520,3 +520,13 @@ Route::get('/status', function () {
         'timestamp' => now()->toIso8601String()
     ]);
 });
+
+// Test authentication endpoint
+Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
+    return response()->json([
+        'success' => true,
+        'message' => 'Authentication working correctly',
+        'user' => $request->user()->only(['id', 'name', 'email']),
+        'token_valid' => true
+    ]);
+});
