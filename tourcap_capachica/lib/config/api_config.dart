@@ -61,4 +61,7 @@ class ApiConfig {
   // Endpoints de inscripciones
   static String getInscripcionesUrl() => '$baseUrl$apiPrefix${BackendRoutes.inscripciones}';
   static String getMisInscripcionesUrl() => '$baseUrl$apiPrefix${BackendRoutes.misInscripciones}';
+
+  // Municipalidad
+  static String getMunicipalidadUrl(int id) => '$baseUrl$apiPrefix${BackendRoutes.municipalidadById.replaceAll('{id}', id.toString())}';
 }

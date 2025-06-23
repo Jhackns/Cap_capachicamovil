@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 // Providers
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/dashboard_service.dart';
 
 // Screens
 import 'screens/home_screen.dart';
@@ -32,6 +33,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        Provider(create: (context) => DashboardService()),
       ],
       child: const MyApp(),
     ),

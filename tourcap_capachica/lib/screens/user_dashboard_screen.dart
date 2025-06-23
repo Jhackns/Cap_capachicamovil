@@ -12,8 +12,8 @@ class UserDashboardScreen extends StatefulWidget {
 }
 
 class _UserDashboardScreenState extends State<UserDashboardScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
-  bool _isDrawerOpen = false;
 
   final List<Widget> _screens = [
     const _DashboardContent(),
@@ -22,6 +22,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     const _MisInscripcionesScreen(),
   ];
 
+  void _onDrawerItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -29,19 +34,12 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     final user = authProvider.currentUser;
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('Panel de Usuario'),
         backgroundColor: const Color(0xFF9C27B0),
         foregroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(_isDrawerOpen ? Icons.close : Icons.menu),
-          onPressed: () {
-            setState(() {
-              _isDrawerOpen = !_isDrawerOpen;
-            });
-          },
-        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -151,12 +149,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
               leading: const Icon(Icons.dashboard, color: Color(0xFF9C27B0)),
               title: const Text('Panel de Control'),
               selected: _selectedIndex == 0,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 0;
-                });
-                Navigator.pop(context);
-              },
+              onTap: () => _onDrawerItemTapped(0),
             ),
             const Divider(),
             const Padding(
@@ -173,34 +166,19 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
               leading: const Icon(Icons.book_online, color: Color(0xFF9C27B0)),
               title: const Text('Gestión de Reservas'),
               selected: _selectedIndex == 1,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 1;
-                });
-                Navigator.pop(context);
-              },
+              onTap: () => _onDrawerItemTapped(1),
             ),
             ListTile(
               leading: const Icon(Icons.list_alt, color: Color(0xFF9C27B0)),
               title: const Text('Mis Reservas'),
               selected: _selectedIndex == 2,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 2;
-                });
-                Navigator.pop(context);
-              },
+              onTap: () => _onDrawerItemTapped(2),
             ),
             ListTile(
               leading: const Icon(Icons.event_note, color: Color(0xFF9C27B0)),
               title: const Text('Mis Inscripciones'),
               selected: _selectedIndex == 3,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 3;
-                });
-                Navigator.pop(context);
-              },
+              onTap: () => _onDrawerItemTapped(3),
             ),
             const Divider(),
             ListTile(
@@ -237,25 +215,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           ],
         ),
       ),
-      body: Stack(
-        children: [
-          _screens[_selectedIndex],
-          // Overlay sombreado cuando el drawer está abierto
-          if (_isDrawerOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isDrawerOpen = false;
-                  });
-                },
-                child: Container(
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-        ],
-      ),
+      body: _screens[_selectedIndex],
     );
   }
 }

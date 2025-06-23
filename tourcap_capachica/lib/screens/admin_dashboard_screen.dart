@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../models/user.dart';
 import '../services/dashboard_service.dart';
+import 'admin/municipalidad_management_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -33,6 +34,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     const _RolesManagementScreen(),
     const _PermissionsManagementScreen(),
     const _EntrepreneursManagementScreen(),
+    const MunicipalidadManagementScreen(),
   ];
 
   @override
@@ -306,6 +308,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             title: const Text('Emprendedores'),
             selected: _selectedIndex == 4,
             onTap: () => _onDrawerItemTapped(4),
+          ),
+          ListTile(
+            leading: const Icon(Icons.account_balance, color: Color(0xFF9C27B0)),
+            title: const Text('Municipalidad'),
+            selected: _selectedIndex == 5,
+            onTap: () => _onDrawerItemTapped(5),
           ),
           const Divider(),
           ListTile(

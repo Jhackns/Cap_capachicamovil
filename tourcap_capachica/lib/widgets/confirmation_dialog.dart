@@ -3,59 +3,36 @@ import 'package:flutter/material.dart';
 class ConfirmationDialog extends StatelessWidget {
   final String title;
   final String message;
+  final VoidCallback onConfirm;
   final String confirmText;
   final String cancelText;
-  final VoidCallback onConfirm;
-  final Color? confirmColor;
-  final IconData? icon;
 
   const ConfirmationDialog({
     Key? key,
     required this.title,
     required this.message,
+    required this.onConfirm,
     this.confirmText = 'Confirmar',
     this.cancelText = 'Cancelar',
-    required this.onConfirm,
-    this.confirmColor,
-    this.icon,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      title: Row(
-        children: [
-          if (icon != null) ...[
-            Icon(
-              icon,
-              color: confirmColor ?? Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Text(title),
-        ],
-      ),
+      title: Text(title),
       content: Text(message),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            cancelText,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(cancelText),
         ),
         ElevatedButton(
           onPressed: () {
-            Navigator.of(context).pop();
             onConfirm();
+            Navigator.of(context).pop(true);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: confirmColor ?? Theme.of(context).colorScheme.primary,
+            backgroundColor: Colors.red,
             foregroundColor: Colors.white,
           ),
           child: Text(confirmText),
@@ -71,8 +48,6 @@ class ConfirmationDialog extends StatelessWidget {
     required String message,
     String confirmText = 'Confirmar',
     String cancelText = 'Cancelar',
-    Color? confirmColor,
-    IconData? icon,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -81,9 +56,7 @@ class ConfirmationDialog extends StatelessWidget {
         message: message,
         confirmText: confirmText,
         cancelText: cancelText,
-        confirmColor: confirmColor,
-        icon: icon,
-        onConfirm: () => Navigator.of(context).pop(true),
+        onConfirm: () {}, // No-op, handled by dialog button
       ),
     );
     return result ?? false;

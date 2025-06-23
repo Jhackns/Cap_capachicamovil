@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../services/auth_service.dart';
+import '../models/user.dart';
+import '../models/municipalidad.dart';
 
 class DashboardService {
   final AuthService _authService = AuthService();
@@ -252,6 +254,100 @@ class DashboardService {
     } catch (e) {
       print('Error al obtener permisos: $e');
       return [];
+    }
+  }
+
+  // ===== MUNICIPALIDAD =====
+
+  Future<List<Municipalidad>> getMunicipalidades() async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('No autenticado');
+
+    final response = await http.get(
+      Uri.parse(ApiConfig.getMunicipalidadesUrl()),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json'
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true && data['data'] is List) {
+        final List municipalidadesJson = data['data'];
+        return municipalidadesJson
+            .map((json) => Municipalidad.fromJson(json))
+            .toList();
+      } else {
+        throw Exception(
+            'Fallo al cargar municipalidades: ${data['message']}');
+      }
+    } else {
+      throw Exception(
+          'Error al cargar municipalidades: ${response.statusCode}');
+    }
+  }
+
+  Future<Municipalidad> createMunicipalidad(
+      Map<String, dynamic> municipalidadData) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('No autenticado');
+
+    final response = await http.post(
+      Uri.parse(ApiConfig.getMunicipalidadesUrl()),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: json.encode(municipalidadData),
+    );
+
+    if (response.statusCode == 201) {
+      final data = json.decode(response.body);
+      return Municipalidad.fromJson(data['data']);
+    } else {
+      throw Exception('Error al crear municipalidad: ${response.body}');
+    }
+  }
+
+  Future<Municipalidad> updateMunicipalidad(
+      int id, Map<String, dynamic> municipalidadData) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('No autenticado');
+
+    final response = await http.put(
+      Uri.parse(ApiConfig.getMunicipalidadUrl(id)),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: json.encode(municipalidadData),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return Municipalidad.fromJson(data['data']);
+    } else {
+      throw Exception('Error al actualizar municipalidad: ${response.body}');
+    }
+  }
+
+  Future<void> deleteMunicipalidad(int id) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('No autenticado');
+
+    final response = await http.delete(
+      Uri.parse(ApiConfig.getMunicipalidadUrl(id)),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json'
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al eliminar municipalidad: ${response.body}');
     }
   }
 } 
