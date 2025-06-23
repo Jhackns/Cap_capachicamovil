@@ -24,46 +24,72 @@ class EntrepreneurCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Seleccionar la imagen a mostrar
+    String imgUrl = '';
+    if (entrepreneur.imageUrl != null && entrepreneur.imageUrl!.isNotEmpty && !entrepreneur.imageUrl!.startsWith('[')) {
+      imgUrl = entrepreneur.imageUrl!;
+    } else if (entrepreneur.imagenes.isNotEmpty && entrepreneur.imagenes[0].isNotEmpty) {
+      final img = entrepreneur.imagenes[0];
+      if (img.startsWith('http')) {
+        imgUrl = img;
+      } else if (img.startsWith('assets/')) {
+        // Para assets locales
+        imgUrl = '';
+      } else {
+        // Si es solo el nombre del archivo, puedes ajustar aquí la URL base si es necesario
+        imgUrl = 'https://via.placeholder.com/400x300?text=No+disponible';
+      }
+    } else {
+      imgUrl = 'https://via.placeholder.com/400x300?text=No+disponible';
+    }
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Image
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: CachedNetworkImage(
-                imageUrl: entrepreneur.imageUrl ?? 'https://via.placeholder.com/400x300?text=No+disponible',
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  height: 180,
-                  color: Colors.grey[300],
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  height: 180,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.error, size: 40),
-                ),
-              ),
+              child: imgUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: imgUrl,
+                      height: 140,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        height: 140,
+                        color: Colors.grey[300],
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: 140,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.error, size: 40),
+                      ),
+                    )
+                  : Container(
+                      height: 140,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.image, size: 48, color: Colors.grey),
+                    ),
             ),
-            
             // Content
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     entrepreneur.name,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Container(
@@ -78,40 +104,46 @@ class EntrepreneurCard extends StatelessWidget {
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     entrepreneur.description ?? 'Sin descripción',
                     style: Theme.of(context).textTheme.bodyMedium,
-                    maxLines: 3,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (entrepreneur.location.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 4),
-                        Text(
-                          entrepreneur.location,
-                          style: Theme.of(context).textTheme.bodySmall,
+                        Expanded(
+                          child: Text(
+                            entrepreneur.location,
+                            style: Theme.of(context).textTheme.bodySmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
                   ],
                   if (isAdmin) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (showEditButton) // Solo mostrar el botón de edición si showEditButton es true
+                        if (showEditButton)
                           IconButton(
                             icon: const Icon(Icons.edit),
                             color: Colors.blue,
                             onPressed: onEdit,
                           ),
-                        if (showDeleteButton) // Solo mostrar el botón de eliminar si showDeleteButton es true
+                        if (showDeleteButton)
                           IconButton(
                             icon: const Icon(Icons.delete),
                             color: Colors.red,

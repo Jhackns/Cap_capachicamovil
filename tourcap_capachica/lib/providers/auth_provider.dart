@@ -111,8 +111,8 @@ class AuthProvider with ChangeNotifier {
         gender: gender,
         language: language,
         profileImage: profileImage,
-      );
-      
+        );
+        
       if (user != null) {
         _user = user;
         _token = user.token;

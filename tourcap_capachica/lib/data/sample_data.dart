@@ -15,6 +15,12 @@ final List<Entrepreneur> sampleEntrepreneurs = [
     precioRango: '80-120 Soles/noche',
     categoria: 'Hospedaje',
     estado: true,
+    metodosPago: ['Efectivo', 'Tarjeta'],
+    imagenes: ['assets/images/hospedaje1.jpg'],
+    certificaciones: [],
+    idiomasHablados: [],
+    opcionesAcceso: [],
+    facilidadesDiscapacidad: false,
   ),
   Entrepreneur(
     id: 2,
@@ -29,6 +35,12 @@ final List<Entrepreneur> sampleEntrepreneurs = [
     precioRango: '100-150 Soles/noche',
     categoria: 'Hospedaje',
     estado: true,
+    metodosPago: ['Efectivo', 'Tarjeta'],
+    imagenes: ['assets/images/hospedaje2.jpg'],
+    certificaciones: [],
+    idiomasHablados: [],
+    opcionesAcceso: [],
+    facilidadesDiscapacidad: false,
   ),
 
   // Gastronomía
@@ -45,6 +57,12 @@ final List<Entrepreneur> sampleEntrepreneurs = [
     precioRango: '15-40 Soles por plato',
     categoria: 'Gastronomía',
     estado: true,
+    metodosPago: ['Efectivo', 'Tarjeta'],
+    imagenes: ['assets/images/restaurante1.jpg'],
+    certificaciones: [],
+    idiomasHablados: [],
+    opcionesAcceso: [],
+    facilidadesDiscapacidad: false,
   ),
   Entrepreneur(
     id: 4,
@@ -59,6 +77,12 @@ final List<Entrepreneur> sampleEntrepreneurs = [
     precioRango: '5-25 Soles',
     categoria: 'Gastronomía',
     estado: true,
+    metodosPago: ['Efectivo', 'Tarjeta'],
+    imagenes: ['assets/images/restaurante2.jpg'],
+    certificaciones: [],
+    idiomasHablados: [],
+    opcionesAcceso: [],
+    facilidadesDiscapacidad: false,
   ),
 
   // Turismo
@@ -75,6 +99,12 @@ final List<Entrepreneur> sampleEntrepreneurs = [
     precioRango: '50-150 Soles por persona',
     categoria: 'Turismo',
     estado: true,
+    metodosPago: ['Efectivo', 'Tarjeta'],
+    imagenes: ['assets/images/turismo1.jpg'],
+    certificaciones: [],
+    idiomasHablados: [],
+    opcionesAcceso: [],
+    facilidadesDiscapacidad: false,
   ),
   Entrepreneur(
     id: 6,
@@ -89,6 +119,12 @@ final List<Entrepreneur> sampleEntrepreneurs = [
     precioRango: '30-80 Soles por persona',
     categoria: 'Turismo',
     estado: true,
+    metodosPago: ['Efectivo', 'Tarjeta'],
+    imagenes: ['assets/images/turismo2.jpg'],
+    certificaciones: [],
+    idiomasHablados: [],
+    opcionesAcceso: [],
+    facilidadesDiscapacidad: false,
   ),
 
   // Artesanía
@@ -105,6 +141,12 @@ final List<Entrepreneur> sampleEntrepreneurs = [
     precioRango: '10-200 Soles',
     categoria: 'Artesanía',
     estado: true,
+    metodosPago: ['Efectivo', 'Tarjeta'],
+    imagenes: ['assets/images/artesania1.jpg'],
+    certificaciones: [],
+    idiomasHablados: [],
+    opcionesAcceso: [],
+    facilidadesDiscapacidad: false,
   ),
   Entrepreneur(
     id: 8,
@@ -119,6 +161,12 @@ final List<Entrepreneur> sampleEntrepreneurs = [
     precioRango: '30-500 Soles',
     categoria: 'Artesanía',
     estado: true,
+    metodosPago: ['Efectivo', 'Tarjeta'],
+    imagenes: ['assets/images/artesania2.jpg'],
+    certificaciones: [],
+    idiomasHablados: [],
+    opcionesAcceso: [],
+    facilidadesDiscapacidad: false,
   ),
 ];
 

@@ -5,6 +5,9 @@ import '../providers/theme_provider.dart';
 import '../models/user.dart';
 import '../services/dashboard_service.dart';
 import 'admin/municipalidad_management_screen.dart';
+import 'admin/emprendedores/emprendedores_management_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/entrepreneur/entrepreneur_bloc.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -33,8 +36,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     const _UsersManagementScreen(),
     const _RolesManagementScreen(),
     const _PermissionsManagementScreen(),
-    const _EntrepreneursManagementScreen(),
-    const MunicipalidadManagementScreen(),
+    BlocProvider(
+      create: (_) => EntrepreneurBloc(),
+      child: EmprendedoresManagementScreen(),
+    ),
+    const AsociacionesManagementScreen(),
   ];
 
   @override
@@ -52,7 +58,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     try {
       // Cargar estadísticas del dashboard
       final stats = await _dashboardService.getDashboardStats();
-      
+    
       // Cargar datos completos
       final users = await _dashboardService.getUsers();
       final roles = await _dashboardService.getRoles();
@@ -73,7 +79,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           _error = e.toString();
           _isLoading = false;
         });
-      }
+  }
     }
   }
 
@@ -95,18 +101,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     if (!authProvider.isAdmin) {
       Future.microtask(() => Navigator.pushReplacementNamed(context, '/dashboard'));
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
-    }
+          }
 
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        title: const Text('Panel de Administración'),
+        appBar: AppBar(
+          title: const Text('Panel de Administración'),
         backgroundColor: const Color(0xFF9C27B0),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -115,14 +121,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           if (_selectedIndex > 0)
             IconButton(
               icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
-              onPressed: () {
+            onPressed: () {
                 setState(() {
                   _isGridView = !_isGridView;
                 });
-              },
+            },
               tooltip: _isGridView ? 'Vista de lista' : 'Vista de cuadrícula',
-            ),
-          IconButton(
+          ),
+            IconButton(
             icon: Icon(
               themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
             ),
@@ -138,7 +144,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Navigator.pushNamed(context, '/settings');
                   break;
                 case 'logout':
-                  await authProvider.logout();
+                await authProvider.logout();
                   if (mounted) {
                     Navigator.pushNamedAndRemoveUntil(
                       context,
@@ -147,8 +153,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     );
                   }
                   break;
-              }
-            },
+                }
+              },
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'profile',
@@ -157,31 +163,31 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     Icon(Icons.person),
                     SizedBox(width: 8),
                     Text('Mi Perfil'),
-                  ],
-                ),
+          ],
+        ),
               ),
               const PopupMenuItem(
                 value: 'settings',
                 child: Row(
-                  children: [
+          children: [
                     Icon(Icons.settings),
                     SizedBox(width: 8),
                     Text('Configuración'),
-                  ],
+              ],
                 ),
               ),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(
-                  children: [
+                children: [
                     Icon(Icons.logout),
                     SizedBox(width: 8),
                     Text('Cerrar Sesión'),
-                  ],
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
         ],
       ),
       drawer: _buildDrawer(user),
@@ -207,9 +213,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             decoration: const BoxDecoration(
               color: Color(0xFF9C27B0),
             ),
-            child: Column(
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                children: [
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white,
@@ -223,7 +229,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text(
+                  Text(
                   user?.name ?? 'Administrador',
                   style: const TextStyle(
                     color: Colors.white,
@@ -231,13 +237,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
+                  Text(
                   user?.email ?? 'admin@email.com',
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
                   ),
-                ),
+                  ),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -253,9 +259,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
           ),
           ListTile(
             leading: const Icon(Icons.dashboard, color: Color(0xFF9C27B0)),
@@ -303,26 +309,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
           ),
-          ListTile(
+          ExpansionTile(
             leading: const Icon(Icons.business, color: Color(0xFF9C27B0)),
             title: const Text('Emprendedores'),
-            selected: _selectedIndex == 4,
-            onTap: () => _onDrawerItemTapped(4),
-          ),
-          ListTile(
-            leading: const Icon(Icons.account_balance, color: Color(0xFF9C27B0)),
-            title: const Text('Municipalidad'),
-            selected: _selectedIndex == 5,
-            onTap: () => _onDrawerItemTapped(5),
+            initiallyExpanded: _selectedIndex == 4 || _selectedIndex == 5,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.manage_accounts, color: Color(0xFF9C27B0)),
+                title: const Text('Gestión de Emprendedores'),
+                selected: _selectedIndex == 4,
+                onTap: () => _onDrawerItemTapped(4),
+              ),
+              ListTile(
+                leading: const Icon(Icons.groups, color: Color(0xFF9C27B0)),
+                title: const Text('Gestión de Asociaciones'),
+                selected: _selectedIndex == 5,
+                onTap: () => _onDrawerItemTapped(5),
+              ),
+            ],
           ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.person, color: Color(0xFF9C27B0)),
             title: const Text('Mi Perfil'),
-            onTap: () {
+                  onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/profile');
-            },
+                  },
           ),
           ListTile(
             leading: const Icon(Icons.settings, color: Color(0xFF9C27B0)),
@@ -389,7 +402,7 @@ class _DashboardContentState extends State<_DashboardContent> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
+                setState(() {
           _error = e.toString();
           _isLoading = false;
         });
@@ -474,15 +487,15 @@ class _DashboardContentState extends State<_DashboardContent> {
                         const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
+                  children: [
+                    Text(
                                 'Panel de Administración',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
-                              ),
+                    ),
                               SizedBox(height: 4),
                               Text(
                                 'Gestión completa del sistema',
@@ -490,10 +503,10 @@ class _DashboardContentState extends State<_DashboardContent> {
                                   color: Colors.white70,
                                   fontSize: 14,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    ),
+                  ],
+                ),
+              ),
                       ],
                     ),
                   ],
@@ -501,7 +514,7 @@ class _DashboardContentState extends State<_DashboardContent> {
               ),
             ),
             const SizedBox(height: 24),
-
+            
             // Estadísticas rápidas
             const Text(
               'Estadísticas del Sistema',
@@ -557,8 +570,8 @@ class _DashboardContentState extends State<_DashboardContent> {
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF9C27B0),
                 ),
-              ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -569,13 +582,13 @@ class _DashboardContentState extends State<_DashboardContent> {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
+              children: [
+                Row(
+                  children: [
+                    Container(
                                 width: 12,
                                 height: 12,
-                                decoration: BoxDecoration(
+                      decoration: BoxDecoration(
                                   color: _getRoleColor(roleData['role']),
                                   shape: BoxShape.circle,
                                 ),
@@ -586,19 +599,19 @@ class _DashboardContentState extends State<_DashboardContent> {
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],
-                          ),
+                                  ),
                           Text(
                             roleData['count']?.toString() ?? '0',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
-                          ),
+                            ),
                         ],
                       ),
                     )).toList(),
                   ),
                 ),
-              ),
+            ),
               const SizedBox(height: 24),
             ],
 
@@ -611,8 +624,8 @@ class _DashboardContentState extends State<_DashboardContent> {
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF9C27B0),
                 ),
-              ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -633,7 +646,7 @@ class _DashboardContentState extends State<_DashboardContent> {
                       subtitle: Text(user['email'] ?? ''),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: [
+              children: [
                           if (user['active'] == true)
                             const Icon(Icons.check_circle, color: Colors.green, size: 16)
                           else
@@ -657,14 +670,14 @@ class _DashboardContentState extends State<_DashboardContent> {
                                 textAlign: TextAlign.center,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ),
-                        ],
+                  ),
+                ),
+              ],
                       ),
                     )).toList(),
                   ),
                 ),
-              ),
+            ),
             ],
             
             // Espacio adicional para evitar problemas con el RefreshIndicator
@@ -705,9 +718,9 @@ class _DashboardContentState extends State<_DashboardContent> {
     }
     
     return 'USER';
-  }
-}
-
+          }
+        }
+        
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -795,11 +808,11 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al cargar usuarios: $e')),
-        );
-      }
+      );
     }
+  }
   }
 
   void _filterUsers(String query) {
@@ -820,8 +833,8 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: [
-        Padding(
+                children: [
+                  Padding(
           padding: const EdgeInsets.all(16.0),
           child: TextField(
             onChanged: _filterUsers,
@@ -831,9 +844,9 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
+                                ),
+                              ),
+                            ),
         ),
         Expanded(
           child: _isLoading
@@ -842,17 +855,17 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                            children: [
                           const Icon(Icons.people_outline, size: 64, color: Colors.grey),
                           const SizedBox(height: 16),
-                          Text(
+                              Text(
                             _searchQuery.isEmpty
                                 ? 'No hay usuarios registrados'
                                 : 'No se encontraron usuarios',
                             style: const TextStyle(fontSize: 18, color: Colors.grey),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
                     )
                   : RefreshIndicator(
                       onRefresh: _loadUsers,
@@ -883,18 +896,18 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
                                   else
                                     const Icon(Icons.cancel, color: Colors.red, size: 16),
                                   const SizedBox(width: 8),
-                                  Text(
+                          Text(
                                     _extractRoleName(user['roles']),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                    ),
+                  ),
+                ],
                               ),
-                            ),
-                          );
-                        },
+              ),
+            );
+          },
                       ),
                     ),
         ),
@@ -941,8 +954,8 @@ class _RolesManagementScreen extends StatelessWidget {
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Color(0xFF9C27B0),
+              ),
             ),
-          ),
           SizedBox(height: 8),
           Text(
             'Funcionalidad próximamente disponible',
@@ -954,8 +967,8 @@ class _RolesManagementScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-}
+      }
+    }
 
 class _PermissionsManagementScreen extends StatefulWidget {
   const _PermissionsManagementScreen();
@@ -980,7 +993,7 @@ class __PermissionsManagementScreenState extends State<_PermissionsManagementScr
     try {
       final permissions = await _dashboardService.getPermissions();
       if (mounted) {
-        setState(() {
+                    setState(() {
           _permissions = permissions;
           _isLoading = false;
         });
@@ -1013,46 +1026,19 @@ class __PermissionsManagementScreenState extends State<_PermissionsManagementScr
                     title: Text(permission['name'] ?? 'Permiso sin nombre'),
                     subtitle: Text('ID: ${permission['id']} | Guard: ${permission['guard_name']}'),
                   ),
-                );
-              },
-            ),
+            );
+          },
+        ),
           );
   }
 }
 
-class _EntrepreneursManagementScreen extends StatelessWidget {
-  const _EntrepreneursManagementScreen();
-
+class AsociacionesManagementScreen extends StatelessWidget {
+  const AsociacionesManagementScreen({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.business,
-            size: 64,
-            color: Color(0xFF9C27B0),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Gestión de Emprendedores',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF9C27B0),
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Funcionalidad próximamente disponible',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
+      child: Text('Gestión de Asociaciones (próximamente)', style: TextStyle(fontSize: 18, color: Colors.grey)),
     );
   }
 }

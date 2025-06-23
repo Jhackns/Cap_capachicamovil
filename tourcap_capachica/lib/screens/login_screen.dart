@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/connectivity_service.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_app_bar.dart';
+import '../utils/error_handler.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? message;
@@ -303,11 +304,32 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted && success) {
           // Redirigir siempre al dashboard unificado
           Navigator.of(context).pushReplacementNamed('/dashboard');
+        } else if (mounted) {
+          // Si el login falla pero no lanza excepción, mostrar error genérico
+          setState(() {
+            _error = 'Correo o contraseña incorrectos.';
+          });
         }
       } catch (e) {
         if (mounted) {
+          // Traducir mensajes comunes del backend
+          String errorMsg = ErrorHandler.getErrorMessage(e);
+          if (e.toString().contains('These credentials do not match our records') ||
+              e.toString().toLowerCase().contains('invalid credentials') ||
+              e.toString().contains('Credenciales inválidas')) {
+            errorMsg = 'Correo o contraseña incorrectos.';
+          } else if (e.toString().toLowerCase().contains('user not found') ||
+                     e.toString().toLowerCase().contains('usuario no existe')) {
+            errorMsg = 'El usuario no existe.';
+          } else if (e.toString().toLowerCase().contains('no se recibió el token')) {
+            errorMsg = 'Error inesperado: no se recibió el token de autenticación.';
+          } else if (e.toString().toLowerCase().contains('timeout')) {
+            errorMsg = 'No se pudo conectar con el servidor. Intenta nuevamente.';
+          } else if (e.toString().toLowerCase().contains('network')) {
+            errorMsg = 'Error de red. Verifica tu conexión a internet.';
+          }
           setState(() {
-            _error = e.toString();
+            _error = errorMsg;
           });
         }
       } finally {

@@ -41,13 +41,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
             Text('Verificando permisos...'),
-          ],
+            ],
         ),
       ),
     );
