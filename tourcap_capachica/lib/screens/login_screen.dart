@@ -262,6 +262,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           child: const Text('Volver al inicio'),
                         ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Botón de diagnóstico
+                        OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _runDiagnostics,
+                          icon: const Icon(Icons.bug_report),
+                          label: const Text('Diagnóstico de Conexión'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            side: const BorderSide(color: Colors.orange),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -334,5 +347,121 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     }
+  }
+
+  Future<void> _runDiagnostics() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final connectivityService = ConnectivityService();
+      final results = await connectivityService.runDiagnostics();
+      
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Diagnóstico de Conexión'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _DiagnosticResult(
+                    label: 'Backend Base',
+                    result: results['backend_base'] ?? 'Error',
+                    isSuccess: results['backend_base'] == 'Conectado',
+                  ),
+                  const SizedBox(height: 8),
+                  _DiagnosticResult(
+                    label: 'API Login',
+                    result: results['api_login'] ?? 'Error',
+                    isSuccess: results['api_login'] == 'Conectado',
+                  ),
+                  const SizedBox(height: 8),
+                  _DiagnosticResult(
+                    label: 'API Users',
+                    result: results['api_users'] ?? 'Error',
+                    isSuccess: results['api_users'] == 'Conectado',
+                  ),
+                  const SizedBox(height: 8),
+                  _DiagnosticResult(
+                    label: 'API Roles',
+                    result: results['api_roles'] ?? 'Error',
+                    isSuccess: results['api_roles'] == 'Conectado',
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error en diagnóstico: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+}
+
+class _DiagnosticResult extends StatelessWidget {
+  final String label;
+  final String result;
+  final bool isSuccess;
+
+  const _DiagnosticResult({
+    required this.label,
+    required this.result,
+    required this.isSuccess,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          isSuccess ? Icons.check_circle : Icons.error,
+          color: isSuccess ? Colors.green : Colors.red,
+          size: 20,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                result,
+                style: TextStyle(
+                  color: isSuccess ? Colors.green : Colors.red,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

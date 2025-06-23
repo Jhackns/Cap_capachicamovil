@@ -13,8 +13,8 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
-  bool _isDrawerOpen = false;
   bool _isGridView = true;
   bool _isLoading = true;
   String? _error;
@@ -75,6 +75,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
+  void _onDrawerItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+    Navigator.pop(context); // Cierra el drawer
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -97,19 +102,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('Panel de Administración'),
         backgroundColor: const Color(0xFF9C27B0),
         foregroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(_isDrawerOpen ? Icons.close : Icons.menu),
-          onPressed: () {
-            setState(() {
-              _isDrawerOpen = !_isDrawerOpen;
-            });
-          },
-        ),
         actions: [
           // Toggle de vista (solo para pantallas de gestión)
           if (_selectedIndex > 0)
@@ -185,25 +183,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ],
       ),
       drawer: _buildDrawer(user),
-      body: Stack(
-        children: [
-          _screens[_selectedIndex],
-          // Overlay sombreado cuando el drawer está abierto
-          if (_isDrawerOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isDrawerOpen = false;
-                  });
-                },
-                child: Container(
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text('Error: $_error', textAlign: TextAlign.center),
+                  ),
+                )
+              : _screens[_selectedIndex],
     );
   }
 
@@ -270,12 +259,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             leading: const Icon(Icons.dashboard, color: Color(0xFF9C27B0)),
             title: const Text('Panel de Control'),
             selected: _selectedIndex == 0,
-            onTap: () {
-              setState(() {
-                _selectedIndex = 0;
-                _isDrawerOpen = false;
-              });
-            },
+            onTap: () => _onDrawerItemTapped(0),
           ),
           const Divider(),
           const Padding(
@@ -292,34 +276,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             leading: const Icon(Icons.people, color: Color(0xFF9C27B0)),
             title: const Text('Usuarios'),
             selected: _selectedIndex == 1,
-            onTap: () {
-              setState(() {
-                _selectedIndex = 1;
-                _isDrawerOpen = false;
-              });
-            },
+            onTap: () => _onDrawerItemTapped(1),
           ),
           ListTile(
             leading: const Icon(Icons.security, color: Color(0xFF9C27B0)),
             title: const Text('Roles'),
             selected: _selectedIndex == 2,
-            onTap: () {
-              setState(() {
-                _selectedIndex = 2;
-                _isDrawerOpen = false;
-              });
-            },
+            onTap: () => _onDrawerItemTapped(2),
           ),
           ListTile(
             leading: const Icon(Icons.lock, color: Color(0xFF9C27B0)),
             title: const Text('Permisos'),
             selected: _selectedIndex == 3,
-            onTap: () {
-              setState(() {
-                _selectedIndex = 3;
-                _isDrawerOpen = false;
-              });
-            },
+            onTap: () => _onDrawerItemTapped(3),
           ),
           const Divider(),
           const Padding(
@@ -336,12 +305,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             leading: const Icon(Icons.business, color: Color(0xFF9C27B0)),
             title: const Text('Emprendedores'),
             selected: _selectedIndex == 4,
-            onTap: () {
-              setState(() {
-                _selectedIndex = 4;
-                _isDrawerOpen = false;
-              });
-            },
+            onTap: () => _onDrawerItemTapped(4),
           ),
           const Divider(),
           ListTile(
@@ -795,6 +759,8 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _users = [];
   final DashboardService _dashboardService = DashboardService();
+  String _searchQuery = '';
+  List<Map<String, dynamic>> _filteredUsers = [];
 
   @override
   void initState() {
@@ -809,15 +775,18 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
 
     try {
       final users = await _dashboardService.getUsers();
-      setState(() {
-        _users = users;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
       if (mounted) {
+        setState(() {
+          _users = users;
+          _filteredUsers = users;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al cargar usuarios: $e')),
         );
@@ -825,68 +794,103 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
     }
   }
 
+  void _filterUsers(String query) {
+    setState(() {
+      _searchQuery = query;
+      _filteredUsers = _users.where((user) {
+        final name = user['name']?.toString().toLowerCase() ?? '';
+        final email = user['email']?.toString().toLowerCase() ?? '';
+        final role = _extractRoleName(user['roles']).toLowerCase();
+        final searchLower = query.toLowerCase();
+        return name.contains(searchLower) ||
+            email.contains(searchLower) ||
+            role.contains(searchLower);
+      }).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _users.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text(
-                        'No hay usuarios registrados',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadUsers,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _users.length,
-                    itemBuilder: (context, index) {
-                      final user = _users[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                            child: Text(
-                              user['name']?.toString().substring(0, 1).toUpperCase() ?? 'U',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                              ),
-                            ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            onChanged: _filterUsers,
+            decoration: InputDecoration(
+              labelText: 'Buscar usuarios...',
+              hintText: 'Buscar por nombre, email o rol',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _filteredUsers.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isEmpty
+                                ? 'No hay usuarios registrados'
+                                : 'No se encontraron usuarios',
+                            style: const TextStyle(fontSize: 18, color: Colors.grey),
                           ),
-                          title: Text(user['name'] ?? 'Usuario'),
-                          subtitle: Text(user['email'] ?? ''),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (user['active'] == true)
-                                const Icon(Icons.check_circle, color: Colors.green, size: 16)
-                              else
-                                const Icon(Icons.cancel, color: Colors.red, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                _extractRoleName(user['roles']),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadUsers,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _filteredUsers.length,
+                        itemBuilder: (context, index) {
+                          final user = _filteredUsers[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                child: Text(
+                                  user['name']?.toString().substring(0, 1).toUpperCase() ?? 'U',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                              title: Text(user['name'] ?? 'Usuario'),
+                              subtitle: Text(user['email'] ?? ''),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (user['active'] == true)
+                                    const Icon(Icons.check_circle, color: Colors.green, size: 16)
+                                  else
+                                    const Icon(Icons.cancel, color: Colors.red, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _extractRoleName(user['roles']),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+        ),
+      ],
     );
   }
 
@@ -945,40 +949,66 @@ class _RolesManagementScreen extends StatelessWidget {
   }
 }
 
-class _PermissionsManagementScreen extends StatelessWidget {
+class _PermissionsManagementScreen extends StatefulWidget {
   const _PermissionsManagementScreen();
 
   @override
+  State<_PermissionsManagementScreen> createState() => __PermissionsManagementScreenState();
+}
+
+class __PermissionsManagementScreenState extends State<_PermissionsManagementScreen> {
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _permissions = [];
+  final DashboardService _dashboardService = DashboardService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    setState(() => _isLoading = true);
+    try {
+      final permissions = await _dashboardService.getPermissions();
+      if (mounted) {
+        setState(() {
+          _permissions = permissions;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar permisos: $e')),
+        );
+      }
+    }
+  }
+  
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.lock,
-            size: 64,
-            color: Color(0xFF9C27B0),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Gestión de Permisos',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF9C27B0),
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _loadPermissions,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _permissions.length,
+              itemBuilder: (context, index) {
+                final permission = _permissions[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: const Icon(Icons.lock_person, color: Color(0xFF9C27B0)),
+                    title: Text(permission['name'] ?? 'Permiso sin nombre'),
+                    subtitle: Text('ID: ${permission['id']} | Guard: ${permission['guard_name']}'),
+                  ),
+                );
+              },
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Funcionalidad próximamente disponible',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
+          );
   }
 }
 

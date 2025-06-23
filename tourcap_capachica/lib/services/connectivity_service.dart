@@ -130,4 +130,49 @@ class ConnectivityService {
 
     return results;
   }
+
+  // Método para ejecutar diagnóstico completo y devolver resultados formateados
+  Future<Map<String, String>> runDiagnostics() async {
+    final results = <String, String>{};
+    
+    try {
+      // Probar conectividad básica
+      final backendConnected = await testBackendConnection();
+      results['backend_base'] = backendConnected ? 'Conectado' : 'Error de conexión';
+      
+      // Probar endpoint de login
+      final loginConnected = await testLoginEndpoint();
+      results['api_login'] = loginConnected ? 'Conectado' : 'Error de conexión';
+      
+      // Probar endpoint de usuarios (sin autenticación)
+      try {
+        final response = await http.get(
+          Uri.parse(ApiConfig.getUsersUrl()),
+          headers: {'Content-Type': 'application/json'},
+        ).timeout(const Duration(seconds: 5));
+        results['api_users'] = response.statusCode > 0 ? 'Conectado' : 'Error de conexión';
+      } catch (e) {
+        results['api_users'] = 'Error de conexión';
+      }
+      
+      // Probar endpoint de roles (sin autenticación)
+      try {
+        final response = await http.get(
+          Uri.parse(ApiConfig.getRolesUrl()),
+          headers: {'Content-Type': 'application/json'},
+        ).timeout(const Duration(seconds: 5));
+        results['api_roles'] = response.statusCode > 0 ? 'Conectado' : 'Error de conexión';
+      } catch (e) {
+        results['api_roles'] = 'Error de conexión';
+      }
+      
+    } catch (e) {
+      results['backend_base'] = 'Error: $e';
+      results['api_login'] = 'Error: $e';
+      results['api_users'] = 'Error: $e';
+      results['api_roles'] = 'Error: $e';
+    }
+    
+    return results;
+  }
 } 
