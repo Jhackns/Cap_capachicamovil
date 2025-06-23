@@ -3,6 +3,7 @@ import 'entrepreneur_event.dart';
 import 'entrepreneur_state.dart';
 import '../../services/emprendedor_service.dart';
 import '../../models/entrepreneur.dart';
+import 'dart:convert';
 
 class EntrepreneurBloc extends Bloc<EntrepreneurEvent, EntrepreneurState> {
   final EmprendedorService _service = EmprendedorService();
@@ -37,7 +38,21 @@ class EntrepreneurBloc extends Bloc<EntrepreneurEvent, EntrepreneurState> {
         final entrepreneurs = list.map((e) => Entrepreneur.fromJson(e as Map<String, dynamic>)).toList();
         emit(EntrepreneurLoaded(entrepreneurs));
       } catch (e) {
-        emit(EntrepreneurError(e.toString()));
+        String message = e.toString();
+        if (e is Exception && e.toString().contains('validation')) {
+          try {
+            final errorJson = RegExp(r'{.*}').stringMatch(e.toString());
+            if (errorJson != null) {
+              final Map<String, dynamic> errorMap = json.decode(errorJson);
+              if (errorMap.containsKey('errors')) {
+                message = errorMap['errors'].values.map((v) => v is List ? v.join(', ') : v.toString()).join('\n');
+              } else if (errorMap.containsKey('message')) {
+                message = errorMap['message'];
+              }
+            }
+          } catch (_) {}
+        }
+        emit(EntrepreneurError(message));
       }
     });
     on<UpdateEntrepreneur>((event, emit) async {
@@ -49,7 +64,21 @@ class EntrepreneurBloc extends Bloc<EntrepreneurEvent, EntrepreneurState> {
         final entrepreneurs = list.map((e) => Entrepreneur.fromJson(e as Map<String, dynamic>)).toList();
         emit(EntrepreneurLoaded(entrepreneurs));
       } catch (e) {
-        emit(EntrepreneurError(e.toString()));
+        String message = e.toString();
+        if (e is Exception && e.toString().contains('validation')) {
+          try {
+            final errorJson = RegExp(r'{.*}').stringMatch(e.toString());
+            if (errorJson != null) {
+              final Map<String, dynamic> errorMap = json.decode(errorJson);
+              if (errorMap.containsKey('errors')) {
+                message = errorMap['errors'].values.map((v) => v is List ? v.join(', ') : v.toString()).join('\n');
+              } else if (errorMap.containsKey('message')) {
+                message = errorMap['message'];
+              }
+            }
+          } catch (_) {}
+        }
+        emit(EntrepreneurError(message));
       }
     });
     on<DeleteEntrepreneur>((event, emit) async {

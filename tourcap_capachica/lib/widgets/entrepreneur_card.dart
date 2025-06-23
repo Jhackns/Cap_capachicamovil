@@ -33,10 +33,8 @@ class EntrepreneurCard extends StatelessWidget {
       if (img.startsWith('http')) {
         imgUrl = img;
       } else if (img.startsWith('assets/')) {
-        // Para assets locales
         imgUrl = '';
       } else {
-        // Si es solo el nombre del archivo, puedes ajustar aquí la URL base si es necesario
         imgUrl = 'https://via.placeholder.com/400x300?text=No+disponible';
       }
     } else {
@@ -44,119 +42,98 @@ class EntrepreneurCard extends StatelessWidget {
     }
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: InkWell(
+      child: ListTile(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: imgUrl.isNotEmpty
+              ? SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: Image.network(
+                    imgUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.error, size: 32),
+                    ),
+                  ),
+                )
+              : Container(
+                  width: 56,
+                  height: 56,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.image, size: 32, color: Colors.grey),
+                ),
+        ),
+        title: Text(
+          entrepreneur.name,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Image
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: imgUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: imgUrl,
-                      height: 140,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        height: 140,
-                        color: Colors.grey[300],
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        height: 140,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error, size: 40),
-                      ),
-                    )
-                  : Container(
-                      height: 140,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image, size: 48, color: Colors.grey),
-                    ),
+            Text(
+              entrepreneur.tipoServicio,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            if (entrepreneur.location.isNotEmpty)
+              Row(
                 children: [
-                  Text(
-                    entrepreneur.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                  Icon(Icons.location_on, size: 14, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 2),
+                  Expanded(
                     child: Text(
-                      entrepreneur.tipoServicio,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      entrepreneur.location,
+                      style: Theme.of(context).textTheme.bodySmall,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    entrepreneur.description ?? 'Sin descripción',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (entrepreneur.location.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            entrepreneur.location,
-                            style: Theme.of(context).textTheme.bodySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  if (isAdmin) ...[
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (showEditButton)
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            color: Colors.blue,
-                            onPressed: onEdit,
-                          ),
-                        if (showDeleteButton)
-                          IconButton(
-                            icon: const Icon(Icons.delete),
-                            color: Colors.red,
-                            onPressed: onDelete,
-                          ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
+            Text(
+              entrepreneur.description ?? 'Sin descripción',
+              style: Theme.of(context).textTheme.bodySmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
+        trailing: isAdmin
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (showEditButton)
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      color: Colors.blue,
+                      onPressed: onEdit,
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  if (showDeleteButton)
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      color: Colors.red,
+                      onPressed: onDelete,
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                ],
+              )
+            : null,
       ),
     );
   }

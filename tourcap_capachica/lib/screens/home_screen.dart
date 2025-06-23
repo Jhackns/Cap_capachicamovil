@@ -51,13 +51,10 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: Implementar chatbot en el futuro
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Chat en desarrollo...'),
-              backgroundColor: Color(0xFF9C27B0),
-            ),
-          );
+          // TODO: Implementar chatbot en el futuro (este TODO sigue siendo relevante si planeas añadirlo después)
+
+          // Navegar directamente a la pantalla de soporte
+          Navigator.pushNamed(context, '/support');
         },
         icon: const Icon(Icons.chat),
         label: const Text('Chat'),
