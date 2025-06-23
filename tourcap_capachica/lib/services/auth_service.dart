@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart';
 import '../config/api_config.dart';
+import '../config/backend_routes.dart';
 
 class AuthService {
   final _storage = const FlutterSecureStorage();
@@ -21,7 +23,10 @@ class AuthService {
       
       final response = await http.post(
         Uri.parse(loginUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: json.encode({
           'email': email,
           'password': password,
@@ -108,18 +113,113 @@ class AuthService {
   }
 
   // Register user
-  Future<User?> register(String name, String email, String password) async {
+  Future<User?> register({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+    required String country,
+    required DateTime birthDate,
+    required String address,
+    required String gender,
+    required String language,
+    File? profileImage,
+  }) async {
     try {
-      final response = await http.post(
-        Uri.parse(ApiConfig.getRegisterUrl()),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
+      final registerUrl = ApiConfig.getRegisterUrl();
+      print('=== INICIO DE REGISTRO ===');
+      print('URL de registro: $registerUrl');
+      print('URL base: ${ApiConfig.baseUrl}');
+      print('API prefix: ${ApiConfig.apiPrefix}');
+      print('Register route: ${BackendRoutes.register}');
+      print('URL completa generada: $registerUrl');
+      
+      // Verificar que la URL sea accesible
+      print('=== VERIFICANDO ACCESIBILIDAD DE LA URL ===');
+      try {
+        final testResponse = await http.get(Uri.parse(registerUrl));
+        print('Test GET response status: ${testResponse.statusCode}');
+        print('Test GET response body: ${testResponse.body}');
+      } catch (e) {
+        print('Error en test GET: $e');
+      }
+      
+      // Crear request multipart si hay imagen de perfil
+      http.Response response;
+      
+      if (profileImage != null) {
+        var request = http.MultipartRequest('POST', Uri.parse(registerUrl));
+        
+        // Agregar campos de texto
+        request.fields['name'] = name;
+        request.fields['email'] = email;
+        request.fields['password'] = password;
+        request.fields['password_confirmation'] = password;
+        request.fields['phone'] = phone;
+        request.fields['country'] = country;
+        request.fields['birth_date'] = birthDate.toIso8601String();
+        request.fields['address'] = address;
+        request.fields['gender'] = gender;
+        request.fields['preferred_language'] = language;
+        
+        print('=== DATOS ENVIADOS (MULTIPART) ===');
+        print('name: $name');
+        print('email: $email');
+        print('phone: $phone');
+        print('country: $country');
+        print('birth_date: ${birthDate.toIso8601String()}');
+        print('address: $address');
+        print('gender: $gender');
+        print('preferred_language: $language');
+        print('profileImage: ${profileImage != null ? "SÍ" : "NO"}');
+        
+        // Agregar imagen de perfil
+        final stream = http.ByteStream(profileImage.openRead());
+        final length = await profileImage.length();
+        final multipartFile = http.MultipartFile(
+          'foto_perfil',
+          stream,
+          length,
+          filename: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        );
+        request.files.add(multipartFile);
+        
+        // Agregar header Accept
+        request.headers['Accept'] = 'application/json';
+        
+        final streamedResponse = await request.send();
+        response = await http.Response.fromStream(streamedResponse);
+      } else {
+        // Request normal sin imagen
+        final requestBody = {
           'name': name,
           'email': email,
           'password': password,
           'password_confirmation': password,
-        }),
-      );
+          'phone': phone,
+          'country': country,
+          'birth_date': birthDate.toIso8601String(),
+          'address': address,
+          'gender': gender,
+          'preferred_language': language,
+        };
+        
+        print('=== DATOS ENVIADOS (JSON) ===');
+        print('Request body: ${json.encode(requestBody)}');
+        
+        response = await http.post(
+          Uri.parse(registerUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: json.encode(requestBody),
+        );
+      }
+
+      print('=== RESPUESTA DEL SERVIDOR ===');
+      print('Status Code: ${response.statusCode}');
+      print('Body: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -140,13 +240,22 @@ class AuthService {
         await _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
         await _storage.write(key: _roleKey, value: 'user');
         
+        print('=== REGISTRO EXITOSO ===');
         return user;
       } else {
         print('Error en registro: ${response.body}');
-        throw Exception('Error en el registro: ${response.statusCode}');
+        String errorMessage = 'Error en el registro (${response.statusCode})';
+        try {
+          final errorData = json.decode(response.body) as Map<String, dynamic>;
+          errorMessage = errorData['message']?.toString() ?? response.body;
+        } catch (_) {
+          errorMessage = response.body;
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Error en register: $e');
+      print('=== ERROR EN EL PROCESO DE REGISTRO ===');
+      print('Error: $e');
       throw Exception('Error de conexión: $e');
     }
   }

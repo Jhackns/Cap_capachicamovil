@@ -31,9 +31,12 @@ class ApiConfig {
   static String getEntrepreneurByIdUrl(int id) => '$baseUrl$apiPrefix${BackendRoutes.emprendedorById.replaceAll('{id}', id.toString())}';
   
   // Endpoints adicionales según las rutas del backend
-  static String getUsersUrl() => '$baseUrl$apiPrefix${BackendRoutes.users}';
-  static String getRolesUrl() => '$baseUrl$apiPrefix${BackendRoutes.roles}';
-  static String getPermissionsUrl() => '$baseUrl$apiPrefix${BackendRoutes.permissions}';
+  static String getUsersUrl() => '$baseUrl$apiPrefix/users';
+  static String getUserUrl(int id) => '$baseUrl$apiPrefix/users/$id';
+  static String getRolesUrl() => '$baseUrl$apiPrefix/roles';
+  static String getRoleUrl(int id) => '$baseUrl$apiPrefix/roles/$id';
+  static String getPermissionsUrl() => '$baseUrl$apiPrefix/permissions';
+  static String getUserPermissionsUrl(int userId) => '$baseUrl$apiPrefix/users/$userId/permissions';
   
   // Endpoints de municipalidades
   static String getMunicipalidadesUrl() => '$baseUrl$apiPrefix${BackendRoutes.municipalidades}';

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 // Providers
@@ -8,7 +9,9 @@ import 'providers/theme_provider.dart';
 // Screens
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
+import 'screens/user_dashboard_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
@@ -47,6 +50,16 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeProvider.themeMode,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('es', 'ES'),
+          Locale('en', 'US'),
+        ],
+        locale: const Locale('es', 'ES'),
         initialRoute: '/main',
         routes: {
           '/main': (context) => const MainNavigation(),
@@ -54,7 +67,9 @@ class MyApp extends StatelessWidget {
           '/explore': (context) => const ExploreTab(),
           '/splash': (context) => const SplashScreen(),
           '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegisterScreen(),
           '/dashboard': (context) => const DashboardScreen(),
+          '/user-dashboard': (context) => const UserDashboardScreen(),
           '/admin-dashboard': (context) => const AdminDashboardScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/settings': (context) => const SettingsScreen(),

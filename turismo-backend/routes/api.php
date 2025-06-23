@@ -44,6 +44,18 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/', fn() => response()->json(['status' => 'ok']));
 
+// Ruta de prueba para verificar middleware
+Route::post('/test-register', function() {
+    return response()->json([
+        'success' => true,
+        'message' => 'Test route working correctly',
+        'data' => [
+            'test' => 'ok',
+            'timestamp' => now()->toIso8601String()
+        ]
+    ]);
+});
+
 // Rutas para autenticación con Google
 Route::prefix('auth/google')->group(function () {
     Route::get('/', [GoogleAuthController::class, 'redirectToGoogle']);

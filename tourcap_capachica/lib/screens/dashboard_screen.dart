@@ -96,6 +96,18 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     final isAdmin = authProvider.isAdmin;
     final userName = authProvider.currentUser?.name ?? 'Administrador';
 
+    // Si no es admin, redirigir al dashboard de usuario
+    if (!isAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/user-dashboard');
+      });
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),

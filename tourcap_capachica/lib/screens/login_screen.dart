@@ -192,6 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: _isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: const Color(0xFF9C27B0),
+                            foregroundColor: Colors.white,
                           ),
                           child: _isLoading
                               ? const SizedBox(
@@ -207,19 +209,46 @@ class _LoginScreenState extends State<LoginScreen> {
                         
                         const SizedBox(height: 16),
                         
+                        // Google Sign In Button
+                        OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _signInWithGoogle,
+                          icon: Image.asset(
+                            'assets/images/google_logo.png',
+                            height: 24,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 24),
+                          ),
+                          label: Text(_isLogin ? 'Continuar con Google' : 'Registrarse con Google'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: const BorderSide(color: Colors.grey),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Divider
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: Colors.grey[400])),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'o',
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ),
+                            Expanded(child: Divider(color: Colors.grey[400])),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
                         // Toggle between login and register
                         TextButton(
                           onPressed: () {
-                            setState(() {
-                              _isLogin = !_isLogin;
-                            });
-                            authProvider.clearError();
+                            Navigator.of(context).pushReplacementNamed('/register');
                           },
-                          child: Text(
-                            _isLogin
-                                ? '¿No tienes una cuenta? Regístrate'
-                                : '¿Ya tienes una cuenta? Inicia sesión',
-                          ),
+                          child: const Text('¿No tienes una cuenta? Regístrate'),
                         ),
                         
                         // Back to home
@@ -232,18 +261,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           },
                           child: const Text('Volver al inicio'),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Diagnostic button
-                        OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _runDiagnostic,
-                          icon: const Icon(Icons.bug_report, size: 18),
-                          label: const Text('Diagnóstico de Conexión'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                          ),
                         ),
                       ],
                     ),
@@ -290,58 +307,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _runDiagnostic() async {
+  Future<void> _signInWithGoogle() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final diagnosticInfo = await ConnectivityService.getDiagnosticInfo();
-      
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Diagnóstico de Conexión'),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('URL Base: ${diagnosticInfo['baseUrl']}'),
-                  const SizedBox(height: 8),
-                  Text('URL Login: ${diagnosticInfo['loginUrl']}'),
-                  const SizedBox(height: 16),
-                  Text('Conexión Backend: ${diagnosticInfo['backendConnection'] ? '✅ OK' : '❌ FALLO'}'),
-                  Text('Endpoint Status: ${diagnosticInfo['statusEndpoint'] ? '✅ OK' : '❌ FALLO'}'),
-                  Text('Endpoint Login: ${diagnosticInfo['loginEndpoint'] ? '✅ OK' : '❌ FALLO'}'),
-                  if ((diagnosticInfo['errors'] as List<String>).isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Text('Errores:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ...(diagnosticInfo['errors'] as List<String>).map((error) => 
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8, top: 4),
-                        child: Text('• $error', style: const TextStyle(color: Colors.red)),
-                      )
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cerrar'),
-              ),
-            ],
-          ),
-        );
-      }
+      // TODO: Implementar autenticación con Google
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Autenticación con Google próximamente disponible'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Error en diagnóstico: $e';
+          _error = 'Error al iniciar sesión con Google: $e';
         });
       }
     } finally {

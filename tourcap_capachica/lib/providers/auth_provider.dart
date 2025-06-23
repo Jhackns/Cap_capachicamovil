@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
@@ -82,13 +83,35 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> register(String name, String email, String password) async {
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+    required String country,
+    required DateTime birthDate,
+    required String address,
+    required String gender,
+    required String language,
+    File? profileImage,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final user = await _authService.register(name, email, password);
+      final user = await _authService.register(
+        name: name,
+        email: email,
+        password: password,
+        phone: phone,
+        country: country,
+        birthDate: birthDate,
+        address: address,
+        gender: gender,
+        language: language,
+        profileImage: profileImage,
+      );
       
       if (user != null) {
         _user = user;
