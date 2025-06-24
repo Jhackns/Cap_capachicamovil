@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
 
 class EmprendedorFormScreen extends StatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -17,6 +18,21 @@ class _EmprendedorFormScreenState extends State<EmprendedorFormScreen> {
   final Map<String, TextEditingController> _controllers = {};
   bool _estado = true;
   bool _facilidadesDiscapacidad = false;
+  // Sugerencias para categorías y tipo de servicio
+  final List<String> _categoriasSugeridas = [
+    'Alojamiento', 'Alimentación', 'Artesanía', 'Transporte', 'Actividades'
+  ];
+  final List<String> _tiposServicioSugeridos = [
+    'Alojamiento', 'Restaurante', 'Guía', 'Transporte', 'Tienda', 'Otro'
+  ];
+  // Simulación de asociaciones (en producción, cargar desde provider o API)
+  final List<Map<String, dynamic>> _asociaciones = [
+    {'id': 1, 'nombre': 'Asociación de Turismo Vivencial Llachón'},
+    {'id': 2, 'nombre': 'Asociación de Artesanos Capachica'},
+    {'id': 3, 'nombre': 'Asociación de Transporte Turístico'},
+  ];
+  // Errores de validación en tiempo real
+  final Map<String, String?> _fieldErrors = {};
 
   @override
   void initState() {
@@ -28,7 +44,12 @@ class _EmprendedorFormScreenState extends State<EmprendedorFormScreen> {
       'opciones_acceso', 'asociacion_id'
     ];
     for (var f in fields) {
-      _controllers[f] = TextEditingController(text: widget.initialData?[f]?.toString() ?? '');
+      var value = widget.initialData?[f];
+      if (value is List) {
+        _controllers[f] = TextEditingController(text: value.join(', '));
+      } else {
+        _controllers[f] = TextEditingController(text: value?.toString() ?? '');
+      }
     }
     _estado = widget.initialData?['estado'] ?? true;
     _facilidadesDiscapacidad = widget.initialData?['facilidades_discapacidad'] ?? false;
@@ -47,15 +68,27 @@ class _EmprendedorFormScreenState extends State<EmprendedorFormScreen> {
       final data = <String, dynamic>{};
       _controllers.forEach((k, v) => data[k] = v.text.trim());
       // Transformar arrays
-      List<String> toList(String value) {
-        if (value.isEmpty) return [];
-        return value.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      List<String> toList(dynamic value) {
+        if (value == null) return [];
+        if (value is List) {
+          return value.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+        }
+        if (value is String && value.trim().startsWith('[') && value.trim().endsWith(']')) {
+          try {
+            final decoded = List<String>.from(jsonDecode(value));
+            return decoded;
+          } catch (_) {}
+        }
+        if (value is String) {
+          return value.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        }
+        return [];
       }
       data['metodos_pago'] = toList(_controllers['metodos_pago']?.text ?? '');
       data['imagenes'] = toList(_controllers['imagenes']?.text ?? '');
       data['certificaciones'] = toList(_controllers['certificaciones']?.text ?? '');
       data['idiomas_hablados'] = toList(_controllers['idiomas_hablados']?.text ?? '');
-      data['opciones_acceso'] = toList(_controllers['opciones_acceso']?.text ?? '');
+      data['opciones_acceso'] = _controllers['opciones_acceso']?.text.trim() ?? '';
       // Números
       data['capacidad_aforo'] = int.tryParse(_controllers['capacidad_aforo']?.text ?? '');
       data['numero_personas_atiende'] = int.tryParse(_controllers['numero_personas_atiende']?.text ?? '');
@@ -65,8 +98,40 @@ class _EmprendedorFormScreenState extends State<EmprendedorFormScreen> {
       data['facilidades_discapacidad'] = _facilidadesDiscapacidad;
       // Limpiar campos vacíos
       data.removeWhere((k, v) => v == null || (v is String && v.isEmpty));
+      // LOGS DETALLADOS
+      print('=== DATOS A ENVIAR ===');
+      print('JSON: ' + data.toString());
+      print('imagenes: ' + data['imagenes'].toString());
+      print('certificaciones: ' + data['certificaciones'].toString());
+      print('metodos_pago: ' + data['metodos_pago'].toString());
+      print('idiomas_hablados: ' + data['idiomas_hablados'].toString());
+      print('opciones_acceso: ' + data['opciones_acceso'].toString());
       widget.onSubmit(data);
     }
+  }
+
+  void _validateField(String key, String value) {
+    String? error;
+    switch (key) {
+      case 'nombre':
+      case 'tipo_servicio':
+      case 'ubicacion':
+      case 'telefono':
+      case 'email':
+      case 'categoria':
+        if (value.isEmpty) error = 'Este campo es obligatorio';
+        if (key == 'email' && value.isNotEmpty && !RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$").hasMatch(value)) {
+          error = 'Correo inválido';
+        }
+        break;
+      case 'asociacion_id':
+        if (value.isEmpty) error = 'Seleccione una asociación';
+        else if (!_asociaciones.any((a) => a['id'].toString() == value)) error = 'ID de asociación inválido';
+        break;
+    }
+    setState(() {
+      _fieldErrors[key] = error;
+    });
   }
 
   @override
@@ -86,9 +151,9 @@ class _EmprendedorFormScreenState extends State<EmprendedorFormScreen> {
               const Text('Datos Básicos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF9C27B0))),
               const SizedBox(height: 8),
               _buildTextField('nombre', 'Nombre*', autofillHints: [AutofillHints.name]),
-              _buildTextField('tipo_servicio', 'Tipo de Servicio*'),
+              _buildTextField('tipo_servicio', 'Tipo de Servicio*', suggestions: _tiposServicioSugeridos),
               _buildTextField('descripcion', 'Descripción', maxLines: 3),
-              _buildTextField('categoria', 'Categoría*'),
+              _buildTextField('categoria', 'Categoría*', suggestions: _categoriasSugeridas),
               _buildTextField('ubicacion', 'Ubicación*', autofillHints: [AutofillHints.fullStreetAddress]),
               const SizedBox(height: 16),
               const Text('Contacto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF9C27B0))),
@@ -109,7 +174,7 @@ class _EmprendedorFormScreenState extends State<EmprendedorFormScreen> {
               _buildTextField('certificaciones', 'Certificaciones (separadas por coma)'),
               _buildTextField('idiomas_hablados', 'Idiomas Hablados (separados por coma)'),
               _buildTextField('opciones_acceso', 'Opciones de Acceso (separadas por coma)'),
-              _buildTextField('asociacion_id', 'ID Asociación', keyboardType: TextInputType.number),
+              _buildTextField('asociacion_id', 'ID Asociación'),
               SwitchListTile(
                 title: const Text('¿Activo?'),
                 value: _estado,
@@ -156,7 +221,79 @@ class _EmprendedorFormScreenState extends State<EmprendedorFormScreen> {
     );
   }
 
-  Widget _buildTextField(String key, String label, {int maxLines = 1, TextInputType? keyboardType, List<String>? autofillHints}) {
+  Widget _buildTextField(String key, String label, {int maxLines = 1, TextInputType? keyboardType, List<String>? autofillHints, bool isDropdown = false, List<String>? suggestions}) {
+    if (key == 'categoria' && suggestions != null) {
+      final currentSuggestions = List<String>.from(suggestions);
+      final currentValue = _controllers[key]?.text;
+      if (currentValue != null && currentValue.isNotEmpty && !currentSuggestions.contains(currentValue)) {
+        currentSuggestions.insert(0, currentValue);
+      }
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: DropdownButtonFormField<String>(
+          value: currentValue?.isNotEmpty == true ? currentValue : null,
+          items: currentSuggestions.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
+          onChanged: (val) {
+            _controllers[key]?.text = val ?? '';
+            _validateField(key, val ?? '');
+          },
+          decoration: InputDecoration(
+            labelText: label,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            errorText: _fieldErrors[key],
+          ),
+          validator: (value) => _fieldErrors[key],
+        ),
+      );
+    }
+    if (key == 'tipo_servicio' && suggestions != null) {
+      final currentSuggestions = List<String>.from(suggestions);
+      final currentValue = _controllers[key]?.text;
+      if (currentValue != null && currentValue.isNotEmpty && !currentSuggestions.contains(currentValue)) {
+        currentSuggestions.insert(0, currentValue);
+      }
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: DropdownButtonFormField<String>(
+          value: currentValue?.isNotEmpty == true ? currentValue : null,
+          items: currentSuggestions.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
+          onChanged: (val) {
+            _controllers[key]?.text = val ?? '';
+            _validateField(key, val ?? '');
+          },
+          decoration: InputDecoration(
+            labelText: label,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            errorText: _fieldErrors[key],
+          ),
+          validator: (value) => _fieldErrors[key],
+        ),
+      );
+    }
+    if (key == 'asociacion_id') {
+      final currentValue = _controllers[key]?.text;
+      final isValueValid = currentValue != null &&
+          currentValue.isNotEmpty &&
+          _asociaciones.any((a) => a['id'].toString() == currentValue);
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: DropdownButtonFormField<String>(
+          value: isValueValid ? currentValue : null,
+          items: _asociaciones.map((a) => DropdownMenuItem(value: a['id'].toString(), child: Text(a['nombre']))).toList(),
+          onChanged: (val) {
+            _controllers[key]?.text = val ?? '';
+            _validateField(key, val ?? '');
+          },
+          decoration: InputDecoration(
+            labelText: label,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            errorText: _fieldErrors[key],
+          ),
+          validator: (value) => _fieldErrors[key],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
@@ -164,19 +301,13 @@ class _EmprendedorFormScreenState extends State<EmprendedorFormScreen> {
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          errorText: _fieldErrors[key],
         ),
         maxLines: maxLines,
         keyboardType: keyboardType,
         autofillHints: autofillHints,
-        validator: (value) {
-          if ((key == 'nombre' || key == 'tipo_servicio' || key == 'ubicacion' || key == 'telefono' || key == 'email' || key == 'categoria') && (value == null || value.isEmpty)) {
-            return 'Este campo es obligatorio';
-          }
-          if (key == 'email' && value != null && value.isNotEmpty && !RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+").hasMatch(value)) {
-            return 'Correo inválido';
-          }
-          return null;
-        },
+        onChanged: (val) => _validateField(key, val),
+        validator: (value) => _fieldErrors[key],
       ),
     );
   }

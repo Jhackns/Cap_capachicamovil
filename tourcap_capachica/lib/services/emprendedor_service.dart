@@ -46,6 +46,10 @@ class EmprendedorService {
     if (response.statusCode == 201 && res['success'] == true) {
       return res['data'];
     } else {
+      print('=== ERROR AL CREAR EMPRENDEDOR ===');
+      print('Status code: [31m${response.statusCode}[0m');
+      print('Response body: ${response.body}');
+      print('Headers: ${response.headers}');
       throw Exception(res['message'] ?? 'Error al crear emprendedor');
     }
   }
@@ -62,6 +66,10 @@ class EmprendedorService {
     if (response.statusCode == 200 && res['success'] == true) {
       return res['data'];
     } else {
+      print('=== ERROR AL EDITAR EMPRENDEDOR ===');
+      print('Status code: [31m${response.statusCode}[0m');
+      print('Response body: ${response.body}');
+      print('Headers: ${response.headers}');
       throw Exception(res['message'] ?? 'Error al actualizar emprendedor');
     }
   }

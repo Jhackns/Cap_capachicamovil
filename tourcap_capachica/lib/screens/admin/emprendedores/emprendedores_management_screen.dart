@@ -83,22 +83,24 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
   }
 
   void _onCreate(BuildContext context) async {
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => EmprendedorFormScreen(
           onSubmit: (data) {
             context.read<EntrepreneurBloc>().add(CreateEntrepreneur(data));
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           },
         ),
       ),
     );
-    context.read<EntrepreneurBloc>().add(LoadEntrepreneurs());
+    if (result == true) {
+      context.read<EntrepreneurBloc>().add(LoadEntrepreneurs());
+    }
   }
 
   void _onEdit(BuildContext context, Entrepreneur emprendedor) async {
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => EmprendedorFormScreen(
@@ -106,12 +108,14 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
           isEdit: true,
           onSubmit: (data) {
             context.read<EntrepreneurBloc>().add(UpdateEntrepreneur(emprendedor.id, data));
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           },
         ),
       ),
     );
-    context.read<EntrepreneurBloc>().add(LoadEntrepreneurs());
+    if (result == true) {
+      context.read<EntrepreneurBloc>().add(LoadEntrepreneurs());
+    }
   }
 
   void _onDelete(BuildContext context, Entrepreneur emprendedor) async {
@@ -121,10 +125,7 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
         title: const Text('Confirmar eliminación'),
         content: const Text('¿Estás seguro de que deseas eliminar este emprendedor?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -135,8 +136,11 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
     );
     if (confirm == true) {
       context.read<EntrepreneurBloc>().add(DeleteEntrepreneur(emprendedor.id));
-      context.read<EntrepreneurBloc>().add(LoadEntrepreneurs());
     }
+  }
+
+  Future<void> _refreshEntrepreneurs() async {
+    context.read<EntrepreneurBloc>().add(LoadEntrepreneurs());
   }
 
   @override
@@ -221,6 +225,8 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(state.message), backgroundColor: Colors.green),
                     );
+                    // Recargar automáticamente tras una operación exitosa
+                    _refreshEntrepreneurs();
                   } else if (state is EntrepreneurError) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(state.message), backgroundColor: Colors.red),
@@ -228,62 +234,24 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
                   }
                 },
                 builder: (context, state) {
-                  if (state is EntrepreneurLoading) {
+                  if (state is EntrepreneurLoading && _allEntrepreneurs.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (state is EntrepreneurLoaded) {
-                    if (_allEntrepreneurs.isEmpty || _allEntrepreneurs.length != state.entrepreneurs.length) {
-                      _allEntrepreneurs = state.entrepreneurs;
-                      Future.microtask(() => _applySearchAndFilter());
-                    }
-                    if (_filteredEntrepreneurs.isEmpty) {
-                      return const Center(child: Text('No hay emprendedores registrados.'));
-                    }
-                    if (_isGrid) {
-                      return LayoutBuilder(
-                        builder: (context, constraints) {
-                          final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-                          return GridView.builder(
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.75,
-                            ),
-                            itemCount: _filteredEntrepreneurs.length,
-                            itemBuilder: (context, index) {
-                              final e = _filteredEntrepreneurs[index];
-                              return EntrepreneurCard(
-                                entrepreneur: e,
-                                isAdmin: true,
-                                showEditButton: true,
-                                showDeleteButton: true,
-                                onEdit: () => _onEdit(context, e),
-                                onDelete: () => _onDelete(context, e),
-                              );
-                            },
-                          );
-                        },
-                      );
-                    } else {
-                      return ListView.builder(
-                        itemCount: _filteredEntrepreneurs.length,
-                        itemBuilder: (context, index) {
-                          final e = _filteredEntrepreneurs[index];
-                          return EntrepreneurCard(
-                            entrepreneur: e,
-                            isAdmin: true,
-                            showEditButton: true,
-                            showDeleteButton: true,
-                            onEdit: () => _onEdit(context, e),
-                            onDelete: () => _onDelete(context, e),
-                          );
-                        },
-                      );
-                    }
-                  } else if (state is EntrepreneurError) {
+                    _allEntrepreneurs = state.entrepreneurs;
+                    // El filtro se aplica en el microtask para evitar problemas de build
+                    Future.microtask(() => _applySearchAndFilter());
+                  } else if (state is EntrepreneurError && _allEntrepreneurs.isEmpty) {
                     return Center(child: Text(state.message, style: const TextStyle(color: Colors.red)));
                   }
-                  return const SizedBox.shrink();
+
+                  if (_allEntrepreneurs.isEmpty && state is! EntrepreneurLoading) {
+                    return const Center(child: Text('No hay emprendedores para mostrar.'));
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: _refreshEntrepreneurs,
+                    child: _buildContent(),
+                  );
                 },
               ),
             ),
@@ -297,5 +265,56 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
         tooltip: 'Agregar Emprendedor',
       ),
     );
+  }
+
+  Widget _buildContent() {
+    if (_filteredEntrepreneurs.isEmpty) {
+      return const Center(child: Text('No se encontraron emprendedores con los filtros actuales.'));
+    }
+
+    if (_isGrid) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+          return GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.8, // Ajustado para el nuevo diseño de la tarjeta
+            ),
+            itemCount: _filteredEntrepreneurs.length,
+            itemBuilder: (context, index) {
+              final e = _filteredEntrepreneurs[index];
+              return EntrepreneurCard(
+                entrepreneur: e,
+                isAdmin: true,
+                showEditButton: true,
+                showDeleteButton: true,
+                onEdit: () => _onEdit(context, e),
+                onDelete: () => _onDelete(context, e),
+                isGridView: true, // Indicar que es vista de cuadrícula
+              );
+            },
+          );
+        },
+      );
+    } else {
+      return ListView.builder(
+        itemCount: _filteredEntrepreneurs.length,
+        itemBuilder: (context, index) {
+          final e = _filteredEntrepreneurs[index];
+          return EntrepreneurCard(
+            entrepreneur: e,
+            isAdmin: true,
+            showEditButton: true,
+            showDeleteButton: true,
+            onEdit: () => _onEdit(context, e),
+            onDelete: () => _onDelete(context, e),
+            isGridView: false, // Indicar que es vista de lista
+          );
+        },
+      );
+    }
   }
 } 
