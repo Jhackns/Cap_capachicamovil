@@ -9,6 +9,14 @@ import '../models/municipalidad.dart';
 class DashboardService {
   final AuthService _authService = AuthService();
 
+  Map<String, String> _getAuthHeaders(String token) {
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
   Future<Map<String, dynamic>> getDashboardStats() async {
     try {
       final token = await _authService.getToken();
@@ -19,11 +27,7 @@ class DashboardService {
       // Obtener estadísticas del dashboard
       final response = await http.get(
         Uri.parse(ApiConfig.getDashboardSummaryUrl()),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: _getAuthHeaders(token),
       );
 
       if (response.statusCode == 200) {
@@ -50,31 +54,19 @@ class DashboardService {
       // Obtener usuarios
       final usersResponse = await http.get(
         Uri.parse(ApiConfig.getUsersUrl()),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: _getAuthHeaders(token),
       );
 
       // Obtener roles
       final rolesResponse = await http.get(
         Uri.parse(ApiConfig.getRolesUrl()),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: _getAuthHeaders(token),
       );
 
       // Obtener permisos
       final permissionsResponse = await http.get(
         Uri.parse(ApiConfig.getPermissionsUrl()),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: _getAuthHeaders(token),
       );
 
       int totalUsers = 0;
@@ -174,11 +166,7 @@ class DashboardService {
 
       final response = await http.get(
         Uri.parse(ApiConfig.getUsersUrl()),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: _getAuthHeaders(token),
       );
 
       if (response.statusCode == 200) {
@@ -199,30 +187,37 @@ class DashboardService {
   Future<List<Map<String, dynamic>>> getRoles() async {
     try {
       final token = await _authService.getToken();
+      print('--- GET ROLES ---');
+      print('Token: ${token != null ? "Presente" : "NULO"}');
+
       if (token == null) {
         throw Exception('No hay token de autenticación');
       }
 
       final response = await http.get(
         Uri.parse(ApiConfig.getRolesUrl()),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: _getAuthHeaders(token),
       );
+
+      print('Get Roles Status Code: ${response.statusCode}');
+      print('Get Roles Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(data['data']['data'] ?? []);
+          // Soporte para respuestas paginadas (data: { data: [] }) y no paginadas (data: [])
+          if (data['data'] is Map && data['data'].containsKey('data')) {
+            return List<Map<String, dynamic>>.from(data['data']['data']);
+          }
+          return List<Map<String, dynamic>>.from(data['data']);
+        } else {
+          throw Exception('Error al obtener roles: ${data['message']}');
         }
+      } else {
+        throw Exception('Error del servidor al obtener roles: ${response.statusCode}');
       }
-
-      return [];
     } catch (e) {
-      print('Error al obtener roles: $e');
-      return [];
+      throw Exception('No se pudieron cargar los roles. $e');
     }
   }
 
@@ -233,27 +228,86 @@ class DashboardService {
       if (token == null) {
         throw Exception('No hay token de autenticación');
       }
-
       final response = await http.get(
         Uri.parse(ApiConfig.getPermissionsUrl()),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: _getAuthHeaders(token),
       );
+
+      print('Get Permissions Status Code: ${response.statusCode}');
+      print('Get Permissions Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(data['data']['data'] ?? []);
+        if (data['success'] == true && data['data'] != null) {
+          return List<Map<String, dynamic>>.from(data['data']);
+        } else {
+          throw Exception('Error al obtener permisos: ${data['message'] ?? 'Respuesta inesperada'}');
         }
+      } else {
+        throw Exception('Error del servidor al obtener permisos: ${response.statusCode}');
       }
-
-      return [];
     } catch (e) {
-      print('Error al obtener permisos: $e');
-      return [];
+      throw Exception('No se pudieron cargar los permisos: $e');
+    }
+  }
+
+  // Crear un nuevo rol
+  Future<Map<String, dynamic>> createRole(String name, List<int> permissionIds) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+      final response = await http.post(
+        Uri.parse(ApiConfig.getRolesUrl()),
+        headers: _getAuthHeaders(token),
+        body: json.encode({
+          'name': name,
+          'permissions': permissionIds,
+        }),
+      );
+      
+      print('Create Role Status Code: ${response.statusCode}');
+      print('Create Role Response Body: ${response.body}');
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 201 || (response.statusCode == 200 && data['success'] == true)) {
+        return data;
+      } else {
+        throw Exception(data['message'] ?? 'Error al crear el rol');
+      }
+    } catch (e) {
+      throw Exception('No se pudo crear el rol: $e');
+    }
+  }
+
+  // Actualizar un rol existente
+  Future<Map<String, dynamic>> updateRole(int id, String name, List<int> permissionIds) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+      final response = await http.put(
+        Uri.parse(ApiConfig.getRoleUrl(id)),
+        headers: _getAuthHeaders(token),
+        body: json.encode({
+          'name': name,
+          'permissions': permissionIds,
+        }),
+      );
+
+      print('Update Role Status Code: ${response.statusCode}');
+      print('Update Role Response Body: ${response.body}');
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data;
+      } else {
+        throw Exception(data['message'] ?? 'Error al actualizar el rol');
+      }
+    } catch (e) {
+      throw Exception('No se pudo actualizar el rol: $e');
     }
   }
 

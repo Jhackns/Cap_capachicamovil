@@ -20,19 +20,19 @@ class UserController extends Controller
     {
         // Add optional filtering
         $query = User::query();
-        
+
         // Filter by active status if provided
         if ($request->has('active')) {
             $query->where('active', $request->boolean('active'));
         }
-        
+
         // Filter by role if provided
         if ($request->has('role')) {
             $query->whereHas('roles', function ($q) use ($request) {
                 $q->where('name', $request->role);
             });
         }
-        
+
         // Allow search by name or email
         if ($request->has('search')) {
             $search = $request->search;
@@ -41,18 +41,18 @@ class UserController extends Controller
                   ->orWhere('email', 'like', "%{$search}%");
             });
         }
-        
+
         // Paginate results with eager loading of relationships
         $perPage = $request->get('per_page', 15);
         $users = $query->with(['roles.permissions', 'permissions', 'emprendimientos'])->paginate($perPage);
-        
+
         // Transform the collection using the enhanced UserResource
         $users->setCollection(
             $users->getCollection()->map(function ($user) {
                 return new UserResource($user);
             })
         );
-        
+
         return response()->json([
             'success' => true,
             'data' => $users,
@@ -62,19 +62,19 @@ class UserController extends Controller
     public function search(Request $request)
     {
         $query = $request->get('q', '');
-        
+
         if (empty($query)) {
             return response()->json([
                 'success' => true,
                 'data' => []
             ]);
         }
-        
+
         $users = User::where('email', 'like', "%{$query}%")
                     ->orWhere('name', 'like', "%{$query}%")
                     ->limit(10)
                     ->get();
-        
+
         return response()->json([
             'success' => true,
             'data' => UserResource::collection($users)
@@ -121,14 +121,14 @@ class UserController extends Controller
             'gender' => $request->gender,
             'preferred_language' => $request->preferred_language,
         ];
-        
+
         // Process profile photo if provided
         if ($request->hasFile('foto_perfil')) {
             $userData['foto_perfil'] = $request->file('foto_perfil')->store('fotos_perfil', 'public');
         }
 
         $user = User::create($userData);
-        
+
         // Assign roles if provided
         if ($request->has('roles')) {
             $user->syncRoles($request->roles);
@@ -150,7 +150,7 @@ class UserController extends Controller
     public function show($id)
     {
         $user = User::with(['roles.permissions', 'permissions', 'emprendimientos'])->findOrFail($id);
-        
+
         return response()->json([
             'success' => true,
             'data' => new UserResource($user),
@@ -163,7 +163,7 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
@@ -188,25 +188,25 @@ class UserController extends Controller
 
         // Update user data
         $userData = $request->only([
-            'name', 'email', 'phone', 'active', 'country', 
+            'name', 'email', 'phone', 'active', 'country',
             'birth_date', 'address', 'gender', 'preferred_language'
         ]);
-        
+
         // Update password if provided
         if ($request->filled('password')) {
             $userData['password'] = Hash::make($request->password);
         }
-        
+
         // Process profile photo if provided
         if ($request->hasFile('foto_perfil')) {
             // Delete previous photo if exists
             if ($user->foto_perfil && !filter_var($user->foto_perfil, FILTER_VALIDATE_URL)) {
                 Storage::disk('public')->delete($user->foto_perfil);
             }
-            
+
             $userData['foto_perfil'] = $request->file('foto_perfil')->store('fotos_perfil', 'public');
         }
-        
+
         $user->update($userData);
 
         return response()->json([
@@ -222,7 +222,7 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        
+
         // Prevent deleting admin users
         if ($user->hasRole('admin')) {
             return response()->json([
@@ -235,10 +235,10 @@ class UserController extends Controller
         if ($user->foto_perfil && !filter_var($user->foto_perfil, FILTER_VALIDATE_URL)) {
             Storage::disk('public')->delete($user->foto_perfil);
         }
-        
+
         // Delete user
         $user->delete();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Usuario eliminado exitosamente'
@@ -252,7 +252,7 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         $user->update(['active' => true]);
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Usuario activado exitosamente',
@@ -266,7 +266,7 @@ class UserController extends Controller
     public function deactivate($id)
     {
         $user = User::findOrFail($id);
-        
+
         // Prevent deactivating admin users
         if ($user->hasRole('admin')) {
             return response()->json([
@@ -274,9 +274,9 @@ class UserController extends Controller
                 'message' => 'No se puede desactivar usuarios administradores'
             ], 403);
         }
-        
+
         $user->update(['active' => false]);
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Usuario desactivado exitosamente',
@@ -314,7 +314,7 @@ class UserController extends Controller
             ]
         ]);
     }
-    
+
     /**
      * Upload or update user profile photo.
      */
@@ -333,44 +333,44 @@ class UserController extends Controller
         }
 
         $user = User::findOrFail($id);
-        
+
         // Delete previous photo if exists
         if ($user->foto_perfil && !filter_var($user->foto_perfil, FILTER_VALIDATE_URL)) {
             Storage::disk('public')->delete($user->foto_perfil);
         }
-        
+
         // Store new photo
         $photoPath = $request->file('foto_perfil')->store('fotos_perfil', 'public');
         $user->update(['foto_perfil' => $photoPath]);
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Foto de perfil actualizada exitosamente',
             'data' => new UserResource($user)
         ]);
     }
-    
+
     /**
      * Delete user profile photo.
      */
     public function deleteProfilePhoto($id)
     {
         $user = User::findOrFail($id);
-        
+
         if (!$user->foto_perfil) {
             return response()->json([
                 'success' => false,
                 'message' => 'El usuario no tiene foto de perfil'
             ], 400);
         }
-        
+
         // Delete photo if it's not a URL
         if (!filter_var($user->foto_perfil, FILTER_VALIDATE_URL)) {
             Storage::disk('public')->delete($user->foto_perfil);
         }
-        
+
         $user->update(['foto_perfil' => null]);
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Foto de perfil eliminada exitosamente',

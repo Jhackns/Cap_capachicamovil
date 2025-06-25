@@ -17,34 +17,34 @@ class DashboardController extends Controller
     {
         // Count total users
         $totalUsers = User::count();
-        
+
         // Count active users
         $activeUsers = User::where('active', true)->count();
-        
+
         // Count inactive users
         $inactiveUsers = User::where('active', false)->count();
-        
+
         // Count users by role
         $usersByRole = [];
         $roles = Role::all();
-        
+
         foreach ($roles as $role) {
             $usersByRole[] = [
                 'role' => $role->name,
                 'count' => User::role($role->name)->count()
             ];
         }
-        
+
         // Count total roles and permissions
         $totalRoles = Role::count();
         $totalPermissions = Permission::count();
-        
+
         // Get recent users
         $recentUsers = User::with('roles')
                           ->orderBy('created_at', 'desc')
                           ->limit(5)
                           ->get();
-        
+
         return response()->json([
             'success' => true,
             'data' => [
