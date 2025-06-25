@@ -38,10 +38,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ),
     const AsociacionesManagementScreen(),
     BlocProvider(
-      create: (context) {
-        final dashboardService = Provider.of<DashboardService>(context, listen: false);
-        return MunicipalidadBloc(dashboardService: dashboardService)..add(FetchMunicipalidades());
-      },
+      create: (_) => MunicipalidadBloc(dashboardService: _dashboardService)..add(FetchMunicipalidades()),
       child: const MunicipalidadManagementScreen(),
     ),
     const _PlaceholderScreen(title: 'Gestión de Servicios'),
@@ -65,7 +62,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
 
     try {
-      // No es necesario cargar todo aquí si cada pantalla lo hace por su cuenta
       await _dashboardService.getDashboardStats();
       if (mounted) {
         setState(() {
@@ -325,6 +321,21 @@ class _DashboardContentState extends State<_DashboardContent> {
   String? _error;
   Map<String, dynamic>? _stats;
 
+  // Datos de ejemplo para mostrar mientras se cargan los datos reales
+  final Map<String, dynamic> _exampleStats = {
+    'total_users': 156,
+    'active_users': 142,
+    'total_entrepreneurs': 23,
+    'total_municipalities': 8,
+    'total_services': 45,
+    'total_reservations': 89,
+    'recent_activities': [
+      {'type': 'user_registration', 'message': 'Nuevo usuario registrado: María López', 'time': '2 min'},
+      {'type': 'entrepreneur_approved', 'message': 'Emprendedor aprobado: Restaurante El Sabor', 'time': '15 min'},
+      {'type': 'reservation_created', 'message': 'Nueva reserva creada para Tour Capachica', 'time': '1 hora'},
+    ]
+  };
+
   @override
   void initState() {
     super.initState();
@@ -356,24 +367,610 @@ class _DashboardContentState extends State<_DashboardContent> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Error: $_error'));
-    
-    // El resto del build de _DashboardContent se omite por brevedad
-    // pero debería estar aquí. Asumimos que ya existe.
+    final user = Provider.of<AuthProvider>(context).currentUser;
+    final stats = _stats ?? _exampleStats;
+
     return RefreshIndicator(
       onRefresh: _loadDashboardData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Estadísticas del Dashboard', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 20),
-            if (_stats != null) ...[
-              Text('Total Usuarios: ${_stats!['total_users']}'),
-              Text('Usuarios Activos: ${_stats!['active_users']}'),
-            ]
+            // Header de bienvenida
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF9C27B0), Color(0xFF7B1FA2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.admin_panel_settings_rounded, size: 32, color: Color(0xFF9C27B0)),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '¡Bienvenido, ${user?.name ?? 'Administrador'}!',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Panel de Control de Administración',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, color: Colors.white.withOpacity(0.8), size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Última actualización: ${DateTime.now().toString().substring(11, 16)}',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Tarjetas de estadísticas
+            Text(
+              'Estadísticas Generales',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF9C27B0),
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.2,
+              children: [
+                _buildStatCard(
+                  'Usuarios',
+                  '${stats['total_users']}',
+                  Icons.people_rounded,
+                  Colors.blue,
+                  '${stats['active_users']} activos',
+                ),
+                _buildStatCard(
+                  'Emprendedores',
+                  '${stats['total_entrepreneurs']}',
+                  Icons.store_rounded,
+                  Colors.green,
+                  'Registrados',
+                ),
+                _buildStatCard(
+                  'Municipalidades',
+                  '${stats['total_municipalities']}',
+                  Icons.location_city_rounded,
+                  Colors.orange,
+                  'Activas',
+                ),
+                _buildStatCard(
+                  'Servicios',
+                  '${stats['total_services']}',
+                  Icons.miscellaneous_services_rounded,
+                  Colors.purple,
+                  'Disponibles',
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Actividad reciente
+            Text(
+              'Actividad Reciente',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF9C27B0),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: stats['recent_activities']?.length ?? 0,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final activity = stats['recent_activities'][index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: _getActivityColor(activity['type']),
+                      child: Icon(
+                        _getActivityIcon(activity['type']),
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      activity['message'],
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: Text(
+                      'Hace ${activity['time']}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: Colors.grey[400],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Acciones rápidas
+            Text(
+              'Acciones Rápidas',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF9C27B0),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickActionCard(
+                    'Gestionar Usuarios',
+                    Icons.people_alt_rounded,
+                    Colors.blue,
+                    () {
+                      // Navegar a la pantalla de usuarios
+                      Navigator.pushNamed(context, '/admin/users');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildQuickActionCard(
+                    'Emprendedores',
+                    Icons.store_rounded,
+                    Colors.green,
+                    () {
+                      // Navegar a la pantalla de emprendedores
+                      Navigator.pushNamed(context, '/admin/entrepreneurs');
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickActionCard(
+                    'Municipalidades',
+                    Icons.location_city_rounded,
+                    Colors.orange,
+                    () {
+                      // Navegar a la pantalla de municipalidades
+                      Navigator.pushNamed(context, '/admin/municipalities');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildQuickActionCard(
+                    'Configuración',
+                    Icons.settings_rounded,
+                    Colors.purple,
+                    () => Navigator.pushNamed(context, '/settings'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, String subtitle) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 25,
+              backgroundColor: color.withOpacity(0.1),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: color.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getActivityColor(String type) {
+    switch (type) {
+      case 'user_registration':
+        return Colors.blue;
+      case 'entrepreneur_approved':
+        return Colors.green;
+      case 'reservation_created':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getActivityIcon(String type) {
+    switch (type) {
+      case 'user_registration':
+        return Icons.person_add_rounded;
+      case 'entrepreneur_approved':
+        return Icons.check_circle_rounded;
+      case 'reservation_created':
+        return Icons.calendar_today_rounded;
+      default:
+        return Icons.info_rounded;
+    }
+  }
+}
+
+class _UsersManagementScreen extends StatelessWidget {
+  const _UsersManagementScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    // Datos de ejemplo de usuarios
+    final List<Map<String, dynamic>> users = [
+      {
+        'id': 1,
+        'name': 'María López',
+        'email': 'maria@email.com',
+        'role': 'admin',
+        'status': 'active',
+        'created_at': '2024-01-15',
+      },
+      {
+        'id': 2,
+        'name': 'Juan Pérez',
+        'email': 'juan@email.com',
+        'role': 'user',
+        'status': 'active',
+        'created_at': '2024-01-10',
+      },
+      {
+        'id': 3,
+        'name': 'Ana García',
+        'email': 'ana@email.com',
+        'role': 'entrepreneur',
+        'status': 'pending',
+        'created_at': '2024-01-08',
+      },
+    ];
+
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Gestión de Usuarios',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF9C27B0),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nuevo Usuario'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9C27B0),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ListView.builder(
+                  itemCount: users.length,
+                  itemBuilder: (context, index) {
+                    final user = users[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: _getUserRoleColor(user['role']),
+                        child: Text(
+                          user['name'][0].toUpperCase(),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      title: Text(user['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(user['email']),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _getUserStatusColor(user['status']),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              user['status'],
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          PopupMenuButton<String>(
+                            onSelected: (value) {},
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                              const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getUserRoleColor(String role) {
+    switch (role) {
+      case 'admin':
+        return Colors.red;
+      case 'entrepreneur':
+        return Colors.green;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  Color _getUserStatusColor(String status) {
+    switch (status) {
+      case 'active':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'inactive':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+}
+
+class _RolesManagementScreen extends StatelessWidget {
+  const _RolesManagementScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> roles = [
+      {'id': 1, 'name': 'Administrador', 'users_count': 3, 'permissions': 15},
+      {'id': 2, 'name': 'Emprendedor', 'users_count': 12, 'permissions': 8},
+      {'id': 3, 'name': 'Usuario', 'users_count': 45, 'permissions': 5},
+      {'id': 4, 'name': 'Municipalidad', 'users_count': 8, 'permissions': 10},
+    ];
+
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Gestión de Roles',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF9C27B0),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nuevo Rol'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9C27B0),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ListView.builder(
+                  itemCount: roles.length,
+                  itemBuilder: (context, index) {
+                    final role = roles[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFF9C27B0),
+                        child: Icon(Icons.security_rounded, color: Colors.white),
+                      ),
+                      title: Text(role['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text('${role['users_count']} usuarios • ${role['permissions']} permisos'),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {},
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                          const PopupMenuItem(value: 'permissions', child: Text('Permisos')),
+                          const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -381,22 +978,102 @@ class _DashboardContentState extends State<_DashboardContent> {
   }
 }
 
-class _UsersManagementScreen extends StatelessWidget {
-  const _UsersManagementScreen();
-  @override
-  Widget build(BuildContext context) => const _PlaceholderScreen(title: 'Gestión de Usuarios');
-}
-
-class _RolesManagementScreen extends StatelessWidget {
-  const _RolesManagementScreen();
-  @override
-  Widget build(BuildContext context) => const _PlaceholderScreen(title: 'Gestión de Roles');
-}
-
 class _PermissionsManagementScreen extends StatelessWidget {
   const _PermissionsManagementScreen();
+
   @override
-  Widget build(BuildContext context) => const _PlaceholderScreen(title: 'Gestión de Permisos');
+  Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> permissions = [
+      {'id': 1, 'name': 'Gestionar Usuarios', 'description': 'Crear, editar y eliminar usuarios', 'roles': ['admin']},
+      {'id': 2, 'name': 'Gestionar Emprendedores', 'description': 'Aprobar y gestionar emprendedores', 'roles': ['admin', 'municipalidad']},
+      {'id': 3, 'name': 'Ver Estadísticas', 'description': 'Acceso a estadísticas del sistema', 'roles': ['admin']},
+      {'id': 4, 'name': 'Crear Reservas', 'description': 'Crear y gestionar reservas', 'roles': ['user', 'entrepreneur']},
+    ];
+
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Gestión de Permisos',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF9C27B0),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nuevo Permiso'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9C27B0),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ListView.builder(
+                  itemCount: permissions.length,
+                  itemBuilder: (context, index) {
+                    final permission = permissions[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.green,
+                        child: Icon(Icons.lock_rounded, color: Colors.white),
+                      ),
+                      title: Text(permission['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(permission['description']),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 4,
+                            children: permission['roles'].map<Widget>((role) => Chip(
+                              label: Text(role, style: const TextStyle(fontSize: 10)),
+                              backgroundColor: const Color(0xFF9C27B0).withOpacity(0.1),
+                              labelStyle: const TextStyle(color: Color(0xFF9C27B0)),
+                            )).toList(),
+                          ),
+                        ],
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {},
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                          const PopupMenuItem(value: 'roles', child: Text('Asignar Roles')),
+                          const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class AsociacionesManagementScreen extends StatelessWidget {

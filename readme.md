@@ -91,7 +91,7 @@ flutter pub get
 
 ### 3. Configurar la IP del Servidor
 
-Debes actualizar la dirección IP del servidor backend en dos archivos:
+Debes actualizar la dirección IP del servidor backend en el archivo de configuración:
 
 #### Archivo: `lib/config/environment.dart`
 Busca esta línea:
@@ -103,15 +103,7 @@ Y cámbiala por tu IP local (mantén el puerto 8000):
 return 'http://TU_IP_LOCAL:8000';
 ```
 
-#### Archivo: `lib/config/api_config.dart`
-Busca esta línea:
-```dart
-static const String baseUrl = 'http://192.168.1.64:8080';
-```
-Y cámbiala por tu IP local (mantén el puerto 8000):
-```dart
-static const String baseUrl = 'http://TU_IP_LOCAL:8000';
-```
+**Nota**: El archivo `lib/config/api_config.dart` usa automáticamente la configuración de `environment.dart`, por lo que solo necesitas cambiar la IP en un lugar.
 
 ### 4. Configurar el Emulador o Dispositivo
 
@@ -163,7 +155,7 @@ Si todo está configurado correctamente, la aplicación debería compilar y ejec
 - O que el dispositivo esté conectado y autorizado
 
 **Error: "Connection timeout"**
-- Verifica que la IP en `environment.dart` y `api_config.dart` sea correcta
+- Verifica que la IP en `environment.dart` sea correcta
 - Confirma que el servidor backend esté ejecutándose
 - Verifica que no haya firewall bloqueando la conexión
 
@@ -183,6 +175,8 @@ Capachica-movil/
 └── tourcap_capachica/        # App Flutter
     ├── lib/
     │   ├── config/           # Configuraciones
+    │   │   ├── environment.dart    # Configuración de entorno
+    │   │   └── api_config.dart     # Configuración de API
     │   ├── screens/          # Pantallas de la app
     │   ├── services/         # Servicios API
     │   └── ...
