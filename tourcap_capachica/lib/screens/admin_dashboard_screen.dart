@@ -2047,14 +2047,77 @@ class _RolesManagementScreenState extends State<_RolesManagementScreen> {
                                     ),
                                   ),
                                   PopupMenuButton<String>(
-                                    onSelected: (value) {
+                                    onSelected: (value) async {
                                       if (value == 'edit') {
                                         setState(() {
                                           _selectedRole = role;
                                           _showRoleForm = true;
                                         });
+                                      } else if (value == 'delete') {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Eliminar rol'),
+                                            content: const Text('¿Estás seguro de que deseas eliminar este rol? Esta acción no se puede deshacer.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context, false),
+                                                child: const Text('Cancelar'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () => Navigator.pop(context, true),
+                                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                                child: const Text('Eliminar'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirm == true) {
+                                          try {
+                                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                                            String? token = authProvider.token;
+                                            if (token == null) {
+                                              print('Token en AuthProvider es null, intentando obtener de AuthService...');
+                                              token = await AuthService().getToken();
+                                              if (token == null) {
+                                                print('Token sigue siendo null. Redirigiendo a login.');
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Sesión expirada. Inicia sesión de nuevo.'), backgroundColor: Colors.red),
+                                                );
+                                                Navigator.pushReplacementNamed(context, '/login');
+                                                return;
+                                              }
+                                            }
+                                            print('--- ELIMINAR ROL ---');
+                                            print('Token: $token');
+                                            print('URL: ${ApiConfig.getRoleUrl(role['id'])}');
+                                            final response = await http.delete(
+                                              Uri.parse(ApiConfig.getRoleUrl(role['id'])),
+                                              headers: {
+                                                'Authorization': 'Bearer $token',
+                                                'Accept': 'application/json',
+                                              },
+                                            );
+                                            print('Status: ${response.statusCode}');
+                                            print('Body: ${response.body}');
+                                            if (response.statusCode == 200) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Rol eliminado exitosamente'), backgroundColor: Colors.green),
+                                              );
+                                              _refreshRoles();
+                                            } else {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('Error: ${response.body}'), backgroundColor: Colors.red),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            print('Error al eliminar rol: $e');
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                            );
+                                          }
+                                        }
                                       }
-                                      // TODO: Implementar acción de eliminar
                                     },
                                     itemBuilder: (context) => [
                                       const PopupMenuItem(
@@ -2122,6 +2185,7 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
   Set<int> _selectedPermissionIds = {};
   bool _isLoading = true;
   String? _error;
+  Set<String> _selectedPermissionNames = {};
 
   bool get isEditing => widget.role != null;
 
@@ -2130,9 +2194,9 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
     super.initState();
     if (isEditing) {
       _nameController.text = widget.role!['name'];
-      _selectedPermissionIds =
+      _selectedPermissionNames =
           (widget.role!['permissions'] as List<dynamic>?)
-              ?.map<int>((p) => p['id'])
+              ?.map<String>((p) => p['name'].toString())
               .toSet() ??
               {};
     }
@@ -2147,7 +2211,6 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
         final name = p['name'] as String;
         final groupName = name.split('_').first;
         final capitalizedGroup = groupName[0].toUpperCase() + groupName.substring(1);
-        
         if (!grouped.containsKey(capitalizedGroup)) {
           grouped[capitalizedGroup] = [];
         }
@@ -2173,16 +2236,20 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
+        final permissionsList = _selectedPermissionNames.toList();
+        print('--- ${isEditing ? 'EDITAR' : 'CREAR'} ROL ---');
+        print('Nombre: ${_nameController.text}');
+        print('Permisos: $permissionsList');
         if (isEditing) {
           await _dashboardService.updateRole(
             widget.role!['id'],
             _nameController.text,
-            _selectedPermissionIds.toList(),
+            permissionsList,
           );
         } else {
           await _dashboardService.createRole(
             _nameController.text,
-            _selectedPermissionIds.toList(),
+            permissionsList,
           );
         }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -2191,6 +2258,7 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
         ));
         widget.onCancel();
       } catch (e) {
+        print('Error en submit rol: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error: $e'),
           backgroundColor: Colors.red,
@@ -2256,9 +2324,9 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
                                   child: OutlinedButton(
                                     onPressed: () {
                                       setState(() {
-                                        _selectedPermissionIds = _groupedPermissions.values
+                                        _selectedPermissionNames = _groupedPermissions.values
                                             .expand((list) => list)
-                                            .map<int>((p) => p['id'])
+                                            .map<String>((p) => p['name'] as String)
                                             .toSet();
                                       });
                                     },
@@ -2268,7 +2336,7 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: OutlinedButton(
-                                    onPressed: () => setState(() => _selectedPermissionIds.clear()),
+                                    onPressed: () => setState(() => _selectedPermissionNames.clear()),
                                     child: const Text('Deseleccionar Todo'),
                                   ),
                                 ),
@@ -2295,7 +2363,7 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
                                             child: TextButton(
                                               child: const Text('Seleccionar Grupo'),
                                               onPressed: () => setState(() {
-                                                _selectedPermissionIds.addAll(permissionsInGroup.map<int>((p) => p['id']));
+                                                _selectedPermissionNames.addAll(permissionsInGroup.map<String>((p) => p['name'] as String));
                                               }),
                                             ),
                                           ),
@@ -2304,7 +2372,7 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
                                             child: TextButton(
                                               child: const Text('Quitar Grupo'),
                                               onPressed: () => setState(() {
-                                                _selectedPermissionIds.removeAll(permissionsInGroup.map<int>((p) => p['id']));
+                                                _selectedPermissionNames.removeAll(permissionsInGroup.map<String>((p) => p['name'] as String));
                                               }),
                                             ),
                                           ),
@@ -2312,16 +2380,16 @@ class _RoleFormScreenState extends State<_RoleFormScreen> {
                                      ),
                                    ),
                                   ...permissionsInGroup.map((permission) {
-                                    final permissionId = permission['id'] as int;
+                                    final permissionName = permission['name'] as String;
                                     return CheckboxListTile(
-                                      title: Text(permission['name']),
-                                      value: _selectedPermissionIds.contains(permissionId),
+                                      title: Text(permissionName),
+                                      value: _selectedPermissionNames.contains(permissionName),
                                       onChanged: (bool? selected) {
                                         setState(() {
                                           if (selected == true) {
-                                            _selectedPermissionIds.add(permissionId);
+                                            _selectedPermissionNames.add(permissionName);
                                           } else {
-                                            _selectedPermissionIds.remove(permissionId);
+                                            _selectedPermissionNames.remove(permissionName);
                                           }
                                         });
                                       },

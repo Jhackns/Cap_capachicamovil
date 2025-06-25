@@ -252,7 +252,7 @@ class DashboardService {
   }
 
   // Crear un nuevo rol
-  Future<Map<String, dynamic>> createRole(String name, List<int> permissionIds) async {
+  Future<Map<String, dynamic>> createRole(String name, List<String> permissionNames) async {
     try {
       final token = await _authService.getToken();
       if (token == null) {
@@ -263,7 +263,7 @@ class DashboardService {
         headers: _getAuthHeaders(token),
         body: json.encode({
           'name': name,
-          'permissions': permissionIds,
+          'permissions': permissionNames,
         }),
       );
       
@@ -282,7 +282,7 @@ class DashboardService {
   }
 
   // Actualizar un rol existente
-  Future<Map<String, dynamic>> updateRole(int id, String name, List<int> permissionIds) async {
+  Future<Map<String, dynamic>> updateRole(int id, String name, List<String> permissionNames) async {
     try {
       final token = await _authService.getToken();
       if (token == null) {
@@ -293,7 +293,7 @@ class DashboardService {
         headers: _getAuthHeaders(token),
         body: json.encode({
           'name': name,
-          'permissions': permissionIds,
+          'permissions': permissionNames,
         }),
       );
 
