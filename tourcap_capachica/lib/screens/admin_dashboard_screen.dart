@@ -12,6 +12,11 @@ import '../blocs/entrepreneur/entrepreneur_event.dart';
 import '../blocs/municipalidad/municipalidad_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
+import '../config/api_config.dart';
+import '../services/auth_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -883,7 +888,12 @@ class _UserFormScreenState extends State<_UserFormScreen> {
 
   bool get isEditing => widget.user != null;
 
-  final List<String> _genderOptions = ['masculino', 'femenino', 'otro'];
+  final Map<String, String> _genderOptions = {
+    'male': 'Masculino',
+    'female': 'Femenino',
+    'other': 'Otro',
+    'prefer_not_to_say': 'Prefiero no decirlo',
+  };
   final List<String> _languageOptions = ['es', 'en', 'fr', 'pt'];
   final Map<String, String> _languageLabels = {
     'es': 'Español',
@@ -897,6 +907,8 @@ class _UserFormScreenState extends State<_UserFormScreen> {
     {'id': 3, 'name': 'emprendedor'},
     {'id': 4, 'name': 'moderador'},
   ];
+
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -914,8 +926,10 @@ class _UserFormScreenState extends State<_UserFormScreen> {
               : null;
 
       final genderValue = user['gender']?.toString().toLowerCase();
-      if (genderValue != null && _genderOptions.contains(genderValue)) {
+      if (_genderOptions.keys.contains(genderValue)) {
         _gender = genderValue;
+      } else {
+        _gender = null;
       }
 
       final lang = user['preferred_language'];
@@ -943,28 +957,94 @@ class _UserFormScreenState extends State<_UserFormScreen> {
     }
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      if (_password.isNotEmpty && _password != _confirmPassword) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Las contraseñas no coinciden')),
-        );
-        return;
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_password.isNotEmpty && _password != _confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Las contraseñas no coinciden')),
+      );
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    try {
+      final isEditing = widget.user != null;
+      final url = isEditing
+          ? Uri.parse(ApiConfig.getUserUrl(widget.user!['id']))
+          : Uri.parse(ApiConfig.getUsersUrl());
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      String? token = authProvider.token;
+      if (token == null) {
+        print('Token en AuthProvider es null, intentando obtener de AuthService...');
+        token = await AuthService().getToken();
+        if (token == null) {
+          print('Token sigue siendo null. Redirigiendo a login.');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sesión expirada. Inicia sesión de nuevo.'), backgroundColor: Colors.red),
+          );
+          Navigator.pushReplacementNamed(context, '/login');
+          return;
+        }
       }
-
-      if (isEditing) {
-        // TODO: Implementar lógica de ACTUALIZACIÓN de usuario (API)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Usuario actualizado (simulado)')),
+      final request = http.MultipartRequest(isEditing ? 'POST' : 'POST', url);
+      if (isEditing) request.fields['_method'] = 'PUT';
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+      // Campos básicos
+      request.fields['name'] = _name;
+      request.fields['email'] = _email;
+      if (!isEditing || _password.isNotEmpty) {
+        request.fields['password'] = _password;
+      }
+      if (_phone.isNotEmpty) request.fields['phone'] = _phone;
+      if (_country.isNotEmpty) request.fields['country'] = _country;
+      if (_address.isNotEmpty) request.fields['address'] = _address;
+      if (_birthDate != null) request.fields['birth_date'] = _birthDate!.toIso8601String().split('T').first;
+      if (_gender != null && _gender!.isNotEmpty) request.fields['gender'] = _gender!;
+      if (_preferredLanguage != null && _preferredLanguage!.isNotEmpty) request.fields['preferred_language'] = _preferredLanguage!;
+      request.fields['active'] = _active ? '1' : '0';
+      // Roles como nombres
+      for (final role in _selectedRoles) {
+        request.fields['roles[]'] = role;
+      }
+      // Foto de perfil
+      if (_profileImage != null) {
+        final mimeType = lookupMimeType(_profileImage!.path) ?? 'image/jpeg';
+        final file = await http.MultipartFile.fromPath(
+          'foto_perfil',
+          _profileImage!.path,
+          contentType: MediaType.parse(mimeType),
         );
+        request.files.add(file);
+      }
+      print('--- CREAR/EDITAR USUARIO ---');
+      print('Token: $token');
+      print('URL: $url');
+      print('Campos: ${request.fields}');
+      print('Archivos: ${request.files.map((f) => f.filename).toList()}');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      print('Status: ${response.statusCode}');
+      print('Body: ${response.body}');
+      final data = response.body;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Usuario ${isEditing ? 'actualizado' : 'creado'} exitosamente'), backgroundColor: Colors.green),
+        );
+        if (widget.onCancel != null) widget.onCancel!();
       } else {
-        // TODO: Implementar lógica de CREACIÓN de usuario (API)
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Usuario creado (simulado)')),
+          SnackBar(content: Text('Error: ${data.toString()}'), backgroundColor: Colors.red),
         );
       }
-
-      if (widget.onCancel != null) widget.onCancel!();
+    } catch (e) {
+      print('Error en submit usuario: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -1110,15 +1190,14 @@ class _UserFormScreenState extends State<_UserFormScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _gender,
-                items:
-                    _genderOptions
-                        .map(
-                          (g) => DropdownMenuItem(
-                            value: g,
-                            child: Text(g[0].toUpperCase() + g.substring(1)),
-                          ),
-                        )
-                        .toList(),
+                items: _genderOptions.entries
+                    .map(
+                      (entry) => DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
+                    )
+                    .toList(),
                 onChanged: (v) => setState(() => _gender = v),
                 decoration: const InputDecoration(labelText: 'Género'),
               ),
@@ -1616,7 +1695,71 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
                                       color: Colors.red,
                                     ),
                                     tooltip: 'Eliminar',
-                                    onPressed: () {},
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Eliminar usuario'),
+                                          content: const Text('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, false),
+                                              child: const Text('Cancelar'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(context, true),
+                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                              child: const Text('Eliminar'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        try {
+                                          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                                          String? token = authProvider.token;
+                                          if (token == null) {
+                                            print('Token en AuthProvider es null, intentando obtener de AuthService...');
+                                            token = await AuthService().getToken();
+                                            if (token == null) {
+                                              print('Token sigue siendo null. Redirigiendo a login.');
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Sesión expirada. Inicia sesión de nuevo.'), backgroundColor: Colors.red),
+                                              );
+                                              Navigator.pushReplacementNamed(context, '/login');
+                                              return;
+                                            }
+                                          }
+                                          print('--- ELIMINAR USUARIO ---');
+                                          print('Token: $token');
+                                          print('URL: ${ApiConfig.getUserUrl(user['id'])}');
+                                          final response = await http.delete(
+                                            Uri.parse(ApiConfig.getUserUrl(user['id'])),
+                                            headers: {
+                                              'Authorization': 'Bearer $token',
+                                              'Accept': 'application/json',
+                                            },
+                                          );
+                                          print('Status: ${response.statusCode}');
+                                          print('Body: ${response.body}');
+                                          if (response.statusCode == 200) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Usuario eliminado exitosamente'), backgroundColor: Colors.green),
+                                            );
+                                            _fetchUsers();
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Error: ${response.body}'), backgroundColor: Colors.red),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          print('Error al eliminar usuario: $e');
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                          );
+                                        }
+                                      }
+                                    },
                                   ),
                                   IconButton(
                                     icon: Icon(
@@ -1632,7 +1775,82 @@ class _UsersManagementScreenState extends State<_UsersManagementScreen> {
                                         user['active'] == true
                                             ? 'Desactivar'
                                             : 'Activar',
-                                    onPressed: () {},
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text(user['active'] == true ? 'Desactivar usuario' : 'Activar usuario'),
+                                          content: Text(user['active'] == true
+                                              ? '¿Estás seguro de que deseas desactivar este usuario?'
+                                              : '¿Estás seguro de que deseas activar este usuario?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, false),
+                                              child: const Text('Cancelar'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(context, true),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: user['active'] == true ? Colors.orange : Colors.green,
+                                              ),
+                                              child: Text(user['active'] == true ? 'Desactivar' : 'Activar'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        try {
+                                          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                                          String? token = authProvider.token;
+                                          if (token == null) {
+                                            print('Token en AuthProvider es null, intentando obtener de AuthService...');
+                                            token = await AuthService().getToken();
+                                            if (token == null) {
+                                              print('Token sigue siendo null. Redirigiendo a login.');
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Sesión expirada. Inicia sesión de nuevo.'), backgroundColor: Colors.red),
+                                              );
+                                              Navigator.pushReplacementNamed(context, '/login');
+                                              return;
+                                            }
+                                          }
+                                          final action = user['active'] == true ? 'deactivate' : 'activate';
+                                          final url = ApiConfig.getUserUrl(user['id']) + '/$action';
+                                          print('--- ${action.toUpperCase()} USUARIO ---');
+                                          print('Token: $token');
+                                          print('URL: $url');
+                                          final response = await http.post(
+                                            Uri.parse(url),
+                                            headers: {
+                                              'Authorization': 'Bearer $token',
+                                              'Accept': 'application/json',
+                                            },
+                                          );
+                                          print('Status: ${response.statusCode}');
+                                          print('Body: ${response.body}');
+                                          if (response.statusCode == 200) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(user['active'] == true
+                                                    ? 'Usuario desactivado exitosamente'
+                                                    : 'Usuario activado exitosamente'),
+                                                backgroundColor: user['active'] == true ? Colors.orange : Colors.green,
+                                              ),
+                                            );
+                                            _fetchUsers();
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Error: ${response.body}'), backgroundColor: Colors.red),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          print('Error al activar/desactivar usuario: $e');
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                          );
+                                        }
+                                      }
+                                    },
                                   ),
                                   IconButton(
                                     icon: const Icon(
