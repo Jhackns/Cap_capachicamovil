@@ -17,6 +17,7 @@ import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 import '../config/api_config.dart';
 import '../services/auth_service.dart';
+import 'MenuDashboard/ReservasDashboard/reservas_dashboard_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -35,7 +36,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final DashboardService _dashboardService = DashboardService();
 
   late final List<Widget> _screens = [
-    _DashboardContent(dashboardService: _dashboardService),
+    _DashboardContent(
+      dashboardService: _dashboardService,
+      onNavigateToSection: _onDrawerItemTapped,
+    ),
     const _UsersManagementScreen(),
     const _RolesManagementScreen(),
     const _PermissionsManagementScreen(),
@@ -53,7 +57,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ),
     const _PlaceholderScreen(title: 'Gestión de Servicios'),
     const _PlaceholderScreen(title: 'Gestión de Categorías'),
-    const _PlaceholderScreen(title: 'Gestión de Reservas'),
+    ReservasDashboardScreen(),
     const _PlaceholderScreen(title: 'Mis Reservas'),
     const _PlaceholderScreen(title: 'Mis Inscripciones'),
     const _PlaceholderScreen(title: 'Gestionar Planes'),
@@ -392,8 +396,9 @@ class _DrawerHeader extends StatelessWidget {
 
 class _DashboardContent extends StatefulWidget {
   final DashboardService dashboardService;
+  final void Function(int index) onNavigateToSection;
 
-  const _DashboardContent({required this.dashboardService});
+  const _DashboardContent({required this.dashboardService, required this.onNavigateToSection});
 
   @override
   State<_DashboardContent> createState() => _DashboardContentState();
@@ -677,8 +682,7 @@ class _DashboardContentState extends State<_DashboardContent> {
                     Icons.people_alt_rounded,
                     Colors.blue,
                     () {
-                      // Navegar a la pantalla de usuarios
-                      Navigator.pushNamed(context, '/admin/users');
+                      widget.onNavigateToSection(1); // Ir a gestión de usuarios
                     },
                   ),
                 ),
@@ -689,8 +693,7 @@ class _DashboardContentState extends State<_DashboardContent> {
                     Icons.store_rounded,
                     Colors.green,
                     () {
-                      // Navegar a la pantalla de emprendedores
-                      Navigator.pushNamed(context, '/admin/entrepreneurs');
+                      widget.onNavigateToSection(4); // Ir a gestión de emprendedores
                     },
                   ),
                 ),
@@ -705,8 +708,7 @@ class _DashboardContentState extends State<_DashboardContent> {
                     Icons.location_city_rounded,
                     Colors.orange,
                     () {
-                      // Navegar a la pantalla de municipalidades
-                      Navigator.pushNamed(context, '/admin/municipalities');
+                      widget.onNavigateToSection(6); // Ir a gestión de municipalidades
                     },
                   ),
                 ),

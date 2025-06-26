@@ -404,4 +404,32 @@ class DashboardService {
       throw Exception('Error al eliminar municipalidad: ${response.body}');
     }
   }
+
+  // Obtener lista completa de reservas
+  Future<List<Map<String, dynamic>>> getReservas() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+      final response = await http.get(
+        Uri.parse(ApiConfig.getReservasUrl()),
+        headers: _getAuthHeaders(token),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          // Soporte para paginación (data: { data: [] }) y no paginada (data: [])
+          if (data['data'] is Map && data['data'].containsKey('data')) {
+            return List<Map<String, dynamic>>.from(data['data']['data']);
+          }
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error al obtener reservas: $e');
+      return [];
+    }
+  }
 } 
