@@ -155,6 +155,7 @@ class _MunicipalidadManagementView extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('Añadir Municipalidad'),
         backgroundColor: const Color(0xFF9C27B0),
+        heroTag: 'municipalidades_fab',
       ),
     );
   }

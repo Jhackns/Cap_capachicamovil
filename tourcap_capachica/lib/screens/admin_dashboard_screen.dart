@@ -13,10 +13,16 @@ import '../blocs/municipalidad/municipalidad_bloc.dart';
 import '../blocs/users/users_bloc.dart';
 import '../blocs/roles/roles_bloc.dart';
 import '../blocs/permissions/permissions_bloc.dart';
+import '../blocs/asociaciones/asociaciones_bloc.dart';
+import '../blocs/asociaciones/asociaciones_event.dart';
 import 'MenuDashboard/ReservasDashboard/reservas_dashboard_screen.dart';
 import 'MenuDashboard/Usuarios/users_management_screen.dart';
 import 'MenuDashboard/Usuarios/roles_management_screen.dart';
 import 'MenuDashboard/Usuarios/permissions_management_screen.dart';
+import 'MenuDashboard/AsociacionesDashboard/asociaciones_management_screen.dart';
+import 'MenuDashboard/ServiciosDashboard/servicios_management_screen.dart';
+import '../blocs/servicios/servicios_bloc.dart';
+import '../../../blocs/servicios/servicios_event.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -55,12 +61,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       create: (_) => EntrepreneurBloc()..add(LoadEntrepreneurs()),
       child: const EmprendedoresManagementScreen(),
     ),
-    const AsociacionesManagementScreen(),
+    BlocProvider(
+      create: (_) => AsociacionesBloc()..add(LoadAsociaciones()),
+      child: const AsociacionesManagementScreen(),
+    ),
     BlocProvider(
       create: (_) => MunicipalidadBloc(dashboardService: _dashboardService)..add(FetchMunicipalidades()),
       child: const MunicipalidadManagementScreen(),
     ),
-    const _PlaceholderScreen(title: 'Gestión de Servicios'),
+    BlocProvider(
+      create: (_) => ServiciosBloc()..add(LoadServicios()),
+      child: const ServiciosManagementScreen(),
+    ),
     const _PlaceholderScreen(title: 'Gestión de Categorías'),
     ReservasDashboardScreen(),
     const _PlaceholderScreen(title: 'Mis Reservas'),
@@ -449,7 +461,7 @@ class _DashboardContentState extends State<_DashboardContent> {
       onRefresh: _loadDashboardData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -514,22 +526,22 @@ class _DashboardContentState extends State<_DashboardContent> {
                   ),
                   const SizedBox(height: 16),
                   Row(
-                  children: [
+                    children: [
                       Icon(
                         Icons.access_time,
                         color: Colors.white.withOpacity(0.8),
                         size: 16,
                       ),
                       const SizedBox(width: 8),
-                    Text(
+                      Text(
                         'Última actualización: ${DateTime.now().toString().substring(11, 16)}',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: 14,
                         ),
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -585,7 +597,7 @@ class _DashboardContentState extends State<_DashboardContent> {
             const SizedBox(height: 24),
 
             // Actividad reciente
-                Text(
+            Text(
               'Actividad Reciente',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
@@ -593,8 +605,8 @@ class _DashboardContentState extends State<_DashboardContent> {
               ),
             ),
             const SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
+            Container(
+              decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
@@ -634,9 +646,9 @@ class _DashboardContentState extends State<_DashboardContent> {
                       size: 16,
                       color: Colors.grey[400],
                     ),
-                                      );
-                                    },
-                                  ),
+                  );
+                },
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -650,7 +662,7 @@ class _DashboardContentState extends State<_DashboardContent> {
             ),
             const SizedBox(height: 16),
             Row(
-                        children: [
+              children: [
                 Expanded(
                   child: _buildQuickActionCard(
                     'Gestionar Usuarios',
@@ -694,10 +706,10 @@ class _DashboardContentState extends State<_DashboardContent> {
                     Icons.settings_rounded,
                     Colors.purple,
                     () => Navigator.pushNamed(context, '/settings'),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+              ],
+            ),
             const SizedBox(height: 32),
           ],
         ),
@@ -728,7 +740,7 @@ class _DashboardContentState extends State<_DashboardContent> {
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+          children: [
             CircleAvatar(
               radius: 25,
               backgroundColor: color.withOpacity(0.1),
@@ -828,12 +840,6 @@ class _DashboardContentState extends State<_DashboardContent> {
   }
 }
 
-class AsociacionesManagementScreen extends StatelessWidget {
-  const AsociacionesManagementScreen({Key? key}) : super(key: key);
-  @override
-  Widget build(BuildContext context) => const _PlaceholderScreen(title: 'Gestión de Asociaciones');
-}
-
 class _PlaceholderScreen extends StatelessWidget {
   final String title;
   const _PlaceholderScreen({Key? key, required this.title}) : super(key: key);
@@ -863,4 +869,4 @@ class _PlaceholderScreen extends StatelessWidget {
       ),
     );
   }
-}
+} 

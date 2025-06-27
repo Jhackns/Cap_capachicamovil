@@ -16,7 +16,7 @@ class EnvironmentConfig {
   static String get apiBaseUrl {
     switch (_environment) {
       case Environment.development:
-        return 'http://192.168.1.64:8000';
+        return 'http://172.22.1.44:8000';
       case Environment.staging:
         return 'https://staging-api.turismo-capachica.com';
       case Environment.production:

@@ -41,6 +41,10 @@ class ApiConfig {
   // Endpoints de municipalidades
   static String getMunicipalidadesUrl() => '$baseUrl$apiPrefix${BackendRoutes.municipalidades}';
   
+  // Endpoints de asociaciones
+  static String getAsociacionesUrl() => '$baseUrl$apiPrefix${BackendRoutes.asociaciones}';
+  static String getAsociacionUrl(int id) => '$baseUrl$apiPrefix${BackendRoutes.asociacionById.replaceAll('{id}', id.toString())}';
+  
   // Endpoints de categorías
   static String getCategoriasUrl() => '$baseUrl$apiPrefix${BackendRoutes.categorias}';
   

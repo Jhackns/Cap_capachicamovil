@@ -22,6 +22,8 @@ class Asociacion extends Model
         'municipalidad_id',
         'estado',
         'imagen',
+        'latitud',
+        'longitud',
     ];
 
     protected $casts = [

@@ -59,6 +59,7 @@ class HomeScreen extends StatelessWidget {
         icon: const Icon(Icons.chat),
         label: const Text('Chat'),
         backgroundColor: const Color(0xFF9C27B0),
+        heroTag: 'home_chat_fab',
       ),
       appBar: AppBar(
         title: const Text(

@@ -261,6 +261,7 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
       floatingActionButton: FloatingActionButton(
         onPressed: () => _onCreate(context),
         backgroundColor: const Color(0xFF9C27B0),
+        heroTag: 'emprendedores_fab',
         child: const Icon(Icons.add),
         tooltip: 'Agregar Emprendedor',
       ),

@@ -165,6 +165,7 @@ class _ExploreTabState extends State<ExploreTab> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F8),
       appBar: AppBar(
@@ -324,6 +325,31 @@ class _ExploreTabState extends State<ExploreTab> {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          if (authProvider.isAuthenticated) {
+            _showReviewForm(context);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Debes iniciar sesión para dejar una reseña.'),
+                action: SnackBarAction(
+                  label: 'INICIAR SESIÓN',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+                  },
+                ),
+              ),
+            );
+          }
+        },
+        icon: const Icon(Icons.edit),
+        label: const Text('Escribir Reseña'),
+        backgroundColor: const Color(0xFF9C27B0),
+        heroTag: 'explore_review_fab',
+      ),
     );
   }
 
@@ -435,6 +461,10 @@ class _ExploreTabState extends State<ExploreTab> {
     } else {
       return 'Mostrando todos los emprendimientos disponibles';
     }
+  }
+
+  void _showReviewForm(BuildContext context) {
+    // ... implementación ...
   }
 }
 
@@ -1043,6 +1073,7 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
         icon: const Icon(Icons.edit),
         label: const Text('Escribir Reseña'),
         backgroundColor: const Color(0xFF9C27B0),
+        heroTag: 'explore_review_fab',
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -1191,243 +1222,6 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
   }
 
   void _showReviewForm(BuildContext context) {
-    final formKey = GlobalKey<FormState>();
-    final comentarioController = TextEditingController();
-    int puntuacion = 5;
-    List<File> imagenes = [];
-    final ImagePicker picker = ImagePicker();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          top: 20,
-          left: 20,
-          right: 20,
-        ),
-        child: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Escribe tu reseña',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: const Color(0xFF6A1B9A),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: comentarioController,
-                    decoration: const InputDecoration(
-                      labelText: 'Tu comentario',
-                      border: OutlineInputBorder(),
-                      hintText: 'Comparte tu experiencia...',
-                    ),
-                    maxLines: 4,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor ingresa tu comentario';
-                      }
-                      if (value.length < 10) {
-                        return 'El comentario debe tener al menos 10 caracteres.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Puntuación: '),
-                      ...List.generate(5, (index) {
-                        return IconButton(
-                          icon: Icon(
-                            index < puntuacion ? Icons.star : Icons.star_border,
-                            color: Colors.amber,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              puntuacion = index + 1;
-                            });
-                          },
-                        );
-                      }),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Sección de imágenes
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Imágenes (opcional)',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          if (imagenes.length < 5)
-                            TextButton.icon(
-                              onPressed: () async {
-                                final XFile? image = await picker.pickImage(
-                                  source: ImageSource.gallery,
-                                  maxWidth: 1024,
-                                  maxHeight: 1024,
-                                  imageQuality: 80,
-                                );
-                                if (image != null) {
-                                  setState(() {
-                                    imagenes.add(File(image.path));
-                                  });
-                                }
-                              },
-                              icon: const Icon(Icons.add_photo_alternate),
-                              label: const Text('Agregar'),
-                            ),
-                        ],
-                      ),
-                      if (imagenes.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 80,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: imagenes.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 8),
-                            itemBuilder: (context, index) {
-                              return Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(
-                                      imagenes[index],
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 4,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          imagenes.removeAt(index);
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (formKey.currentState!.validate()) {
-                              Navigator.of(ctx).pop(); // Close bottom sheet
-                              _submitReview(comentarioController.text, puntuacion, imagenes);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6A1B9A),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Enviar Reseña'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop(); // Close bottom sheet
-                          _testAuthentication();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Probar Auth'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(ctx).pop(); // Close bottom sheet
-                      _refreshAuthState();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Refrescar Auth'),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(ctx).pop(); // Close bottom sheet
-                      _testReviewCreation();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Probar Crear Reseña'),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
+    // ... implementación ...
   }
 } 

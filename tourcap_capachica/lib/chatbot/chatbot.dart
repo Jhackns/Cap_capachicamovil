@@ -274,6 +274,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     SizedBox(width: 8),
                     FloatingActionButton(
                       onPressed: _isLoading ? null : _sendMessage,
+                      heroTag: 'chatbot_fab',
                       child: _isLoading
                           ? SizedBox(
                         width: 20,
