@@ -176,6 +176,8 @@ class UserController extends Controller
             'gender' => 'nullable|string|in:male,female,other,prefer_not_to_say',
             'preferred_language' => 'nullable|string|max:50',
             'foto_perfil' => 'nullable|image|max:5120', // 5MB max
+            'roles' => 'nullable|array',
+            'roles.*' => 'exists:roles,name',
         ]);
 
         if ($validator->fails()) {
@@ -208,6 +210,11 @@ class UserController extends Controller
         }
 
         $user->update($userData);
+
+        // Update roles if provided
+        if ($request->has('roles')) {
+            $user->syncRoles($request->roles);
+        }
 
         return response()->json([
             'success' => true,

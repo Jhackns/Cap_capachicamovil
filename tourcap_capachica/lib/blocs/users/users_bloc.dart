@@ -57,14 +57,20 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
       event.userData.forEach((key, value) {
         if (value != null && value.toString().isNotEmpty) {
           if (key == 'roles' && value is List) {
-            for (final role in value) {
-              request.fields['roles[]'] = role.toString();
+            print('DEBUG: Enviando roles: $value'); // Debug log
+            for (int i = 0; i < value.length; i++) {
+              final role = value[i];
+              print('DEBUG: Agregando rol: $role'); // Debug log
+              request.fields['roles[$i]'] = role.toString();
             }
-          } else {
+          } else if (key != 'profileImage') {
             request.fields[key] = value.toString();
           }
         }
       });
+
+      // Debug: imprimir todos los campos que se van a enviar
+      print('DEBUG: Campos a enviar: ${request.fields}');
 
       // Agregar archivo si existe
       if (event.userData['profileImage'] != null && event.userData['profileImage'] is File) {
@@ -114,14 +120,20 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
       event.userData.forEach((key, value) {
         if (value != null && value.toString().isNotEmpty) {
           if (key == 'roles' && value is List) {
-            for (final role in value) {
-              request.fields['roles[]'] = role.toString();
+            print('DEBUG: Enviando roles: $value'); // Debug log
+            for (int i = 0; i < value.length; i++) {
+              final role = value[i];
+              print('DEBUG: Agregando rol: $role'); // Debug log
+              request.fields['roles[$i]'] = role.toString();
             }
-          } else {
+          } else if (key != 'profileImage') {
             request.fields[key] = value.toString();
           }
         }
       });
+
+      // Debug: imprimir todos los campos que se van a enviar
+      print('DEBUG: Campos a enviar: ${request.fields}');
 
       // Agregar archivo si existe
       if (event.userData['profileImage'] != null && event.userData['profileImage'] is File) {

@@ -114,6 +114,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
       return;
     }
 
+    print('DEBUG: Roles seleccionados antes de enviar: $_selectedRoles');
+
     final userData = {
       'name': _name,
       'email': _email,
@@ -127,6 +129,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
       'roles': _selectedRoles,
       if (_profileImage != null) 'profileImage': _profileImage,
     };
+
+    print('DEBUG: userData completo: $userData');
 
     if (!isEditing && _password.isNotEmpty) {
       userData['password'] = _password;
