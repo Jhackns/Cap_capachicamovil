@@ -38,27 +38,27 @@ class ServicioRepository
     {
         try {
             DB::beginTransaction();
-            
+
             // Extraer datos de sliders si existen
             $sliders = $data['sliders'] ?? [];
-            
+
             // Eliminar datos de sliders y horarios del array principal
             unset($data['sliders']);
             unset($data['horarios']);
-            
+
             $servicio = $this->model->create($data);
-            
+
             if (!empty($categoriaIds)) {
                 $servicio->categorias()->sync($categoriaIds);
             }
-            
+
             // Crear horarios si existen
             if (!empty($horarios)) {
                 foreach ($horarios as $horario) {
                     $servicio->horarios()->create($horario);
                 }
             }
-            
+
             // Crear sliders si existen
             if (!empty($sliders)) {
                 // Agregar es_principal a cada slider si no está definido
@@ -69,7 +69,7 @@ class ServicioRepository
                 }
                 $this->sliderRepository->createMultiple('servicio', $servicio->id, $sliders);
             }
-            
+
             DB::commit();
             return $servicio->fresh(['emprendedor', 'categorias', 'sliders', 'horarios']);
         } catch (\Exception $e) {
@@ -82,46 +82,46 @@ class ServicioRepository
     {
         try {
             DB::beginTransaction();
-            
+
             $servicio = $this->findById($id);
             if (!$servicio) {
                 DB::rollBack();
                 return false;
             }
-            
+
             // Extraer datos de sliders si existen
             $sliders = $data['sliders'] ?? [];
             $deletedSliderIds = $data['deleted_sliders'] ?? [];
-            
+
             // Eliminar datos de sliders y horarios del array principal
             unset($data['sliders']);
             unset($data['deleted_sliders']);
             unset($data['horarios']);
             unset($data['deleted_horarios']);
-            
+
             $updated = $servicio->update($data);
-            
+
             if ($updated && !empty($categoriaIds)) {
                 $servicio->categorias()->sync($categoriaIds);
             }
-            
+
             // Actualizar horarios
             if (!empty($horarios)) {
                 // Eliminar horarios existentes que no sean actualizados
                 $horariosIds = array_column($horarios, 'id');
                 $horariosIds = array_filter($horariosIds); // Eliminar valores nulos
-                
+
                 if (!empty($horariosIds)) {
                     $servicio->horarios()->whereNotIn('id', $horariosIds)->delete();
                 } else {
                     $servicio->horarios()->delete();
                 }
-                
+
                 // Crear o actualizar horarios
                 foreach ($horarios as $horarioData) {
                     $horarioId = $horarioData['id'] ?? null;
                     unset($horarioData['id']);
-                    
+
                     if ($horarioId) {
                         $horario = ServicioHorario::find($horarioId);
                         if ($horario && $horario->servicio_id == $servicio->id) {
@@ -133,19 +133,19 @@ class ServicioRepository
                     }
                 }
             }
-            
+
             // Eliminar sliders especificados
             if (!empty($deletedSliderIds)) {
                 foreach ($deletedSliderIds as $sliderId) {
                     $this->sliderRepository->delete($sliderId);
                 }
             }
-            
+
             // Actualizar sliders si existen
             if (!empty($sliders)) {
                 $this->sliderRepository->updateEntitySliders('servicio', $servicio->id, $sliders);
             }
-            
+
             DB::commit();
             return $updated;
         } catch (\Exception $e) {
@@ -158,23 +158,23 @@ class ServicioRepository
     {
         try {
             DB::beginTransaction();
-            
+
             $servicio = $this->findById($id);
             if (!$servicio) {
                 DB::rollBack();
                 return false;
             }
-            
+
             // Eliminar horarios
             $servicio->horarios()->delete();
-            
+
             // Eliminar sliders asociados
             $servicio->sliders->each(function ($slider) {
                 app(SliderRepository::class)->delete($slider->id);
             });
-            
+
             $deleted = $servicio->delete();
-            
+
             DB::commit();
             return $deleted;
         } catch (\Exception $e) {
@@ -203,21 +203,21 @@ class ServicioRepository
             $query->where('categorias.id', $categoriaId);
         })->with(['emprendedor', 'categorias', 'horarios'])->get();
     }
-    
+
     /**
      * Verifica la disponibilidad de un servicio en una fecha y horario específicos
      */
     public function verificarDisponibilidad(int $servicioId, string $fecha, string $horaInicio, string $horaFin): bool
     {
         $servicio = $this->findById($servicioId);
-        
+
         if (!$servicio) {
             return false;
         }
-        
+
         return $servicio->estaDisponible($fecha, $horaInicio, $horaFin);
     }
-    
+
     /**
      * Obtiene los servicios disponibles en un área geográfica (por distancia)
      */
@@ -248,5 +248,16 @@ class ServicioRepository
         return $servicios->load(['emprendedor', 'categorias', 'horarios']);
     }
 
+    /**
+     * Actualiza solo el estado de un servicio
+     */
+    public function updateEstado(int $id, bool $estado): bool
+    {
+        $servicio = $this->findById($id);
+        if (!$servicio) {
+            return false;
+        }
 
+        return $servicio->update(['estado' => $estado]);
+    }
 }

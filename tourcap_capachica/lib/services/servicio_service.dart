@@ -9,24 +9,40 @@ class ServicioService {
   Future<List<Map<String, dynamic>>> getServicios() async {
     final token = await _authService.getToken();
     if (token == null) throw Exception('Token no disponible');
+    
+    final url = ApiConfig.getServiciosUrl();
+    print('🔍 Intentando cargar servicios desde: $url');
+    
     final response = await http.get(
-      Uri.parse(ApiConfig.getServiciosUrl()),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       },
     );
+    
+    print('📡 Response status: ${response.statusCode}');
+    print('📡 Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+      print('📊 Data decoded: $data');
+      
       if (data['success']) {
+        List<Map<String, dynamic>> servicios;
         if (data['data'] is Map && data['data'].containsKey('data')) {
-          return List<Map<String, dynamic>>.from(data['data']['data']);
+          servicios = List<Map<String, dynamic>>.from(data['data']['data']);
+        } else {
+          servicios = List<Map<String, dynamic>>.from(data['data']);
         }
-        return List<Map<String, dynamic>>.from(data['data']);
+        print('✅ Servicios cargados: ${servicios.length}');
+        return servicios;
       } else {
+        print('❌ Error en respuesta: ${data['message']}');
         throw Exception(data['message'] ?? 'Error al cargar servicios');
       }
     } else {
+      print('❌ HTTP Error: ${response.statusCode}');
       throw Exception('Error: ${response.statusCode}');
     }
   }
@@ -84,6 +100,8 @@ class ServicioService {
     final token = await _authService.getToken();
     if (token == null) throw Exception('Token no disponible');
     
+    print('🔄 Actualizando servicio $id con datos: $servicioData');
+    
     final response = await http.put(
       Uri.parse('${ApiConfig.getServiciosUrl()}/$id'),
       headers: {
@@ -94,6 +112,9 @@ class ServicioService {
       body: json.encode(servicioData),
     );
     
+    print('📡 Response status: ${response.statusCode}');
+    print('📡 Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['success']) {
@@ -103,6 +124,15 @@ class ServicioService {
       }
     } else {
       final errorData = json.decode(response.body);
+      print('❌ Error data: $errorData');
+      
+      // Manejar errores de validación específicamente
+      if (response.statusCode == 422 && errorData['errors'] != null) {
+        final errors = errorData['errors'] as Map<String, dynamic>;
+        final errorMessages = errors.entries.map((e) => '${e.key}: ${e.value.join(', ')}').join('; ');
+        throw Exception('Error de validación: $errorMessages');
+      }
+      
       throw Exception(errorData['message'] ?? 'Error: ${response.statusCode}');
     }
   }
@@ -132,8 +162,10 @@ class ServicioService {
     final token = await _authService.getToken();
     if (token == null) throw Exception('Token no disponible');
     
-    final response = await http.put(
-      Uri.parse('${ApiConfig.getServiciosUrl()}/$id'),
+    print('🔄 Cambiando estado del servicio $id a: $estado');
+    
+    final response = await http.patch(
+      Uri.parse('${ApiConfig.getServiciosUrl()}/$id/toggle-estado'),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -142,11 +174,23 @@ class ServicioService {
       body: json.encode({'estado': estado}),
     );
     
+    print('📡 Response status: ${response.statusCode}');
+    print('📡 Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['success'] ?? false;
     } else {
       final errorData = json.decode(response.body);
+      print('❌ Error data: $errorData');
+      
+      // Manejar errores de validación específicamente
+      if (response.statusCode == 422 && errorData['errors'] != null) {
+        final errors = errorData['errors'] as Map<String, dynamic>;
+        final errorMessages = errors.entries.map((e) => '${e.key}: ${e.value.join(', ')}').join('; ');
+        throw Exception('Error de validación: $errorMessages');
+      }
+      
       throw Exception(errorData['message'] ?? 'Error: ${response.statusCode}');
     }
   }
@@ -198,6 +242,69 @@ class ServicioService {
       }
     } else {
       throw Exception('Error: ${response.statusCode}');
+    }
+  }
+
+  // Método para obtener horarios de un servicio
+  Future<List<Map<String, dynamic>>> getHorariosServicio(int servicioId) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('Token no disponible');
+    
+    final response = await http.get(
+      Uri.parse('${ApiConfig.getServiciosUrl()}/$servicioId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success']) {
+        final servicio = data['data'];
+        return List<Map<String, dynamic>>.from(servicio['horarios'] ?? []);
+      } else {
+        throw Exception(data['message'] ?? 'Error al cargar horarios');
+      }
+    } else {
+      throw Exception('Error: ${response.statusCode}');
+    }
+  }
+
+  // Método para subir imágenes
+  Future<List<Map<String, dynamic>>> uploadImages(int servicioId, List<String> imagePaths) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('Token no disponible');
+    
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.getServiciosUrl()}/$servicioId/images'),
+    );
+    
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+    
+    for (int i = 0; i < imagePaths.length; i++) {
+      final file = await http.MultipartFile.fromPath(
+        'images[$i]',
+        imagePaths[i],
+      );
+      request.files.add(file);
+    }
+    
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success']) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      } else {
+        throw Exception(data['message'] ?? 'Error al subir imágenes');
+      }
+    } else {
+      final errorData = json.decode(response.body);
+      throw Exception(errorData['message'] ?? 'Error: ${response.statusCode}');
     }
   }
 } 

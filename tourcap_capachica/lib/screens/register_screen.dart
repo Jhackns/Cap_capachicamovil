@@ -463,11 +463,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       // Google Sign In Button
                       OutlinedButton.icon(
                         onPressed: _isLoading ? null : _signInWithGoogle,
-                        icon: Image.asset(
-                          'assets/images/google_logo.png',
-                          height: 24,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 24),
-                        ),
+                        icon: const Icon(Icons.g_mobiledata, size: 24),
                         label: const Text('Registrarse con Google'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),

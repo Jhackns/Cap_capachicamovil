@@ -32,12 +32,12 @@ class ServicioController extends Controller
     public function index(): JsonResponse
     {
         $servicios = $this->repository->getPaginated();
-        
+
         // Cargar relaciones
         foreach ($servicios as $servicio) {
             $servicio->load(['sliders', 'horarios']);
         }
-        
+
         return response()->json([
             'success' => true,
             'data' => $servicios
@@ -69,14 +69,14 @@ class ServicioController extends Controller
     public function show(int $id): JsonResponse
     {
         $servicio = $this->repository->findById($id);
-        
+
         if (!$servicio) {
             return response()->json([
                 'success' => false,
-                'message' => 'Servicio no encontrado'   
+                'message' => 'Servicio no encontrado'
             ], 404);
         }
-        
+
         return response()->json([
             'success' => true,
             'data' => $servicio
@@ -107,16 +107,16 @@ class ServicioController extends Controller
         try {
             // Obtener datos validados
             $data = $request->validated();
-            
+
             // Extraer categorías y horarios
             $categorias = $data['categorias'] ?? [];
             $horarios = $data['horarios'] ?? [];
-            
+
             // Convertir explícitamente los valores booleanos
             if (isset($data['estado'])) {
                 $data['estado'] = filter_var($data['estado'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
             }
-            
+
             // Procesar los horarios para convertir el campo activo a booleano
             if (!empty($horarios)) {
                 foreach ($horarios as $key => $horario) {
@@ -125,7 +125,7 @@ class ServicioController extends Controller
                     }
                 }
             }
-            
+
             // Procesar los sliders para manejar las imágenes binarias
             if (isset($data['sliders']) && is_array($data['sliders'])) {
                 foreach ($data['sliders'] as $key => $slider) {
@@ -137,10 +137,10 @@ class ServicioController extends Controller
                     }
                 }
             }
-            
+
             // Crear servicio con sus relaciones
             $servicio = $this->repository->create($data, $categorias, $horarios);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $servicio,
@@ -188,26 +188,26 @@ class ServicioController extends Controller
     {
         // Obtener datos validados
         $data = $request->validated();
-        
+
         // Extraer categorías y horarios
         $categorias = $data['categorias'] ?? [];
         $horarios = $data['horarios'] ?? [];
-        
+
         // Convertir explícitamente el estado a booleano
         if (isset($data['estado'])) {
             $data['estado'] = filter_var($data['estado'], FILTER_VALIDATE_BOOLEAN);
         }
-        
+
         // Actualizar servicio con sus relaciones
         $updated = $this->repository->update($id, $data, $categorias, $horarios);
-        
+
         if (!$updated) {
             return response()->json([
                 'success' => false,
                 'message' => 'Servicio no encontrado'
             ], 404);
         }
-        
+
         return response()->json([
             'success' => true,
             'data' => $this->repository->findById($id),
@@ -240,14 +240,14 @@ class ServicioController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $deleted = $this->repository->delete($id);
-        
+
         if (!$deleted) {
             return response()->json([
                 'success' => false,
                 'message' => 'Servicio no encontrado'
             ], 404);
         }
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Servicio eliminado exitosamente'
@@ -275,7 +275,7 @@ class ServicioController extends Controller
     public function byEmprendedor(int $emprendedorId): JsonResponse
     {
         $servicios = $this->repository->getServiciosByEmprendedor($emprendedorId);
-        
+
         return response()->json([
             'success' => true,
             'data' => $servicios
@@ -303,13 +303,13 @@ class ServicioController extends Controller
     public function byCategoria(int $categoriaId): JsonResponse
     {
         $servicios = $this->repository->getServiciosByCategoria($categoriaId);
-        
+
         return response()->json([
             'success' => true,
             'data' => $servicios
         ]);
     }
-    
+
     /**
      * @OA\Get(
      *     path="/api/servicios/ubicacion",
@@ -353,26 +353,26 @@ class ServicioController extends Controller
             'longitud' => 'required|numeric',
             'distancia' => 'nullable|numeric|min:0.1|max:100',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $latitud = $request->latitud;
         $longitud = $request->longitud;
         $distancia = $request->distancia ?? 10;
-        
+
         $servicios = $this->repository->getServiciosByUbicacion($latitud, $longitud, $distancia);
-        
+
         return response()->json([
             'success' => true,
             'data' => $servicios
         ]);
     }
-    
+
     /**
      * @OA\Get(
      *     path="/api/servicios/verificar-disponibilidad",
@@ -424,24 +424,85 @@ class ServicioController extends Controller
             'hora_inicio' => 'required|date_format:H:i:s',
             'hora_fin' => 'required|date_format:H:i:s|after:hora_inicio',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $disponible = $this->repository->verificarDisponibilidad(
             $request->servicio_id,
             $request->fecha,
             $request->hora_inicio,
             $request->hora_fin
         );
-        
+
         return response()->json([
             'success' => true,
             'disponible' => $disponible
+        ]);
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/servicios/{id}/toggle-estado",
+     *     summary="Cambiar el estado de un servicio",
+     *     tags={"Servicios"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID del servicio",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"estado"},
+     *             @OA\Property(property="estado", type="boolean", description="Nuevo estado del servicio")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Estado cambiado exitosamente"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Servicio no encontrado"
+     *     )
+     * )
+     */
+    public function toggleEstado(Request $request, int $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'estado' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $estado = $request->boolean('estado');
+
+        // Actualizar solo el estado
+        $updated = $this->repository->updateEstado($id, $estado);
+
+        if (!$updated) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Servicio no encontrado'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado del servicio actualizado exitosamente',
+            'data' => ['estado' => $estado]
         ]);
     }
 }

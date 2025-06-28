@@ -339,6 +339,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [ServicioController::class, 'store']);
         Route::put('/{id}', [ServicioController::class, 'update']);
         Route::delete('/{id}', [ServicioController::class, 'destroy']);
+        Route::patch('/{id}/toggle-estado', [ServicioController::class, 'toggleEstado']);
     });
 
     // Categorías (rutas protegidas)
