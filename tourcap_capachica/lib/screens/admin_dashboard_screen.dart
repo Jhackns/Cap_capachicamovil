@@ -556,43 +556,50 @@ class _DashboardContentState extends State<_DashboardContent> {
               ),
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.2,
-              children: [
-                _buildStatCard(
-                  'Usuarios',
-                  '${stats['total_users']}',
-                  Icons.people_rounded,
-                  Colors.blue,
-                  '${stats['active_users']} activos',
-                ),
-                _buildStatCard(
-                  'Emprendedores',
-                  '${stats['total_entrepreneurs']}',
-                  Icons.store_rounded,
-                  Colors.green,
-                  'Registrados',
-                ),
-                _buildStatCard(
-                  'Municipalidades',
-                  '${stats['total_municipalities']}',
-                  Icons.location_city_rounded,
-                  Colors.orange,
-                  'Activas',
-                ),
-                _buildStatCard(
-                  'Servicios',
-                  '${stats['total_services']}',
-                  Icons.miscellaneous_services_rounded,
-                  Colors.purple,
-                  'Disponibles',
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 600;
+                final crossAxisCount = isSmallScreen ? 1 : 2;
+                
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: isSmallScreen ? 1.5 : 1.2,
+                  children: [
+                    _buildStatCard(
+                      'Usuarios',
+                      '${stats['total_users']}',
+                      Icons.people_rounded,
+                      Colors.blue,
+                      '${stats['active_users']} activos',
+                    ),
+                    _buildStatCard(
+                      'Emprendedores',
+                      '${stats['total_entrepreneurs']}',
+                      Icons.store_rounded,
+                      Colors.green,
+                      'Registrados',
+                    ),
+                    _buildStatCard(
+                      'Municipalidades',
+                      '${stats['total_municipalities']}',
+                      Icons.location_city_rounded,
+                      Colors.orange,
+                      'Activas',
+                    ),
+                    _buildStatCard(
+                      'Servicios',
+                      '${stats['total_services']}',
+                      Icons.miscellaneous_services_rounded,
+                      Colors.purple,
+                      'Disponibles',
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 24),
 
@@ -661,54 +668,106 @@ class _DashboardContentState extends State<_DashboardContent> {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Gestionar Usuarios',
-                    Icons.people_alt_rounded,
-                    Colors.blue,
-                    () {
-                      widget.onNavigateToSection(1); // Ir a gestión de usuarios
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Emprendedores',
-                    Icons.store_rounded,
-                    Colors.green,
-                    () {
-                      widget.onNavigateToSection(4); // Ir a gestión de emprendedores
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Municipalidades',
-                    Icons.location_city_rounded,
-                    Colors.orange,
-                    () {
-                      widget.onNavigateToSection(6); // Ir a gestión de municipalidades
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Configuración',
-                    Icons.settings_rounded,
-                    Colors.purple,
-                    () => Navigator.pushNamed(context, '/settings'),
-                  ),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 600;
+                
+                if (isSmallScreen) {
+                  // En pantallas pequeñas, apilar verticalmente
+                  return Column(
+                    children: [
+                      _buildQuickActionCard(
+                        'Gestionar Usuarios',
+                        Icons.people_alt_rounded,
+                        Colors.blue,
+                        () {
+                          widget.onNavigateToSection(1); // Ir a gestión de usuarios
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildQuickActionCard(
+                        'Emprendedores',
+                        Icons.store_rounded,
+                        Colors.green,
+                        () {
+                          widget.onNavigateToSection(4); // Ir a gestión de emprendedores
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildQuickActionCard(
+                        'Municipalidades',
+                        Icons.location_city_rounded,
+                        Colors.orange,
+                        () {
+                          widget.onNavigateToSection(6); // Ir a gestión de municipalidades
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildQuickActionCard(
+                        'Configuración',
+                        Icons.settings_rounded,
+                        Colors.purple,
+                        () => Navigator.pushNamed(context, '/settings'),
+                      ),
+                    ],
+                  );
+                } else {
+                  // En pantallas grandes, usar GridView
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              'Gestionar Usuarios',
+                              Icons.people_alt_rounded,
+                              Colors.blue,
+                              () {
+                                widget.onNavigateToSection(1); // Ir a gestión de usuarios
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              'Emprendedores',
+                              Icons.store_rounded,
+                              Colors.green,
+                              () {
+                                widget.onNavigateToSection(4); // Ir a gestión de emprendedores
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              'Municipalidades',
+                              Icons.location_city_rounded,
+                              Colors.orange,
+                              () {
+                                widget.onNavigateToSection(6); // Ir a gestión de municipalidades
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              'Configuración',
+                              Icons.settings_rounded,
+                              Colors.purple,
+                              () => Navigator.pushNamed(context, '/settings'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 32),
           ],

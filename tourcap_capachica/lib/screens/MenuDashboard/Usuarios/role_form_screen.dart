@@ -212,7 +212,11 @@ class _RoleFormScreenState extends State<RoleFormScreen> {
                                   ...permissionsInGroup.map((permission) {
                                     final permissionName = permission['name'] as String;
                                     return CheckboxListTile(
-                                      title: Text(permissionName),
+                                      title: Text(
+                                        permissionName,
+                                        style: const TextStyle(fontSize: 14),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                       value: _selectedPermissionNames.contains(permissionName),
                                       onChanged: (bool? selected) {
                                         setState(() {

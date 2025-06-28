@@ -86,9 +86,12 @@ class _PermissionsManagementScreenState extends State<PermissionsManagementScree
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      group,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    Expanded(
+                                      child: Text(
+                                        group,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     Container(

@@ -289,58 +289,57 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
                                   ),
                               ],
                             ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _getUserStatusColor(
-                                      user['active'] == true ? 'active' : 'inactive',
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    user['active'] == true ? 'Activo' : 'Inactivo',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
-                                  tooltip: 'Editar',
-                                  onPressed: () {
-                                    setState(() {
-                                      _selectedUser = user;
-                                      _showUserForm = true;
-                                    });
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  tooltip: 'Eliminar',
-                                  onPressed: () => _showDeleteDialog(user),
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    user['active'] == true ? Icons.block : Icons.check_circle,
-                                    color: user['active'] == true ? Colors.orange : Colors.green,
-                                  ),
-                                  tooltip: user['active'] == true ? 'Desactivar' : 'Activar',
-                                  onPressed: () => _showActivateDialog(user),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.lock, color: Color(0xFF9C27B0)),
-                                  tooltip: 'Permisos',
-                                  onPressed: () {},
-                                ),
-                              ],
+                            trailing: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isSmallScreen = constraints.maxWidth < 400;
+                                
+                                if (isSmallScreen) {
+                                  // En pantallas pequeñas, usar PopupMenuButton
+                                  return PopupMenuButton<String>(
+                                    onSelected: (value) => _handleUserAction(value, user),
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.edit, color: Colors.blue),
+                                            SizedBox(width: 8),
+                                            Text('Editar'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.delete, color: Colors.red),
+                                            SizedBox(width: 8),
+                                            Text('Eliminar'),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    child: const Icon(Icons.more_vert),
+                                  );
+                                } else {
+                                  // En pantallas grandes, usar Row con botones
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Colors.blue),
+                                        onPressed: () => _handleUserAction('edit', user),
+                                        tooltip: 'Editar',
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () => _handleUserAction('delete', user),
+                                        tooltip: 'Eliminar',
+                                      ),
+                                    ],
+                                  );
+                                }
+                              },
                             ),
                           );
                         },
@@ -439,6 +438,22 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
         return Colors.grey;
       default:
         return Colors.grey;
+    }
+  }
+
+  void _handleUserAction(String action, Map<String, dynamic> user) {
+    switch (action) {
+      case 'edit':
+        setState(() {
+          _selectedUser = user;
+          _showUserForm = true;
+        });
+        break;
+      case 'delete':
+        _showDeleteDialog(user);
+        break;
+      default:
+        break;
     }
   }
 } 

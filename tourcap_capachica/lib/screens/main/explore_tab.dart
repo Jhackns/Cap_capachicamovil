@@ -1215,7 +1215,13 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
         children: [
           Icon(icon, size: 20, color: Colors.purple),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 16))),
+          Expanded(
+            child: Text(
+              text, 
+              style: const TextStyle(fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

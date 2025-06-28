@@ -496,6 +496,7 @@ class _InfoRow extends StatelessWidget {
                     fontSize: 12,
                     color: Colors.grey,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   value,
@@ -503,6 +504,7 @@ class _InfoRow extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

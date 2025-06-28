@@ -417,6 +417,7 @@ class _AsociacionesManagementScreenState extends State<AsociacionesManagementScr
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -425,6 +426,8 @@ class _AsociacionesManagementScreenState extends State<AsociacionesManagementScr
                               color: Colors.grey[600],
                               fontSize: 14,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
                         ],
                       ),
@@ -451,44 +454,106 @@ class _AsociacionesManagementScreenState extends State<AsociacionesManagementScr
                   children: [
                     Icon(Icons.location_city, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(
-                      asociacion.nombreMunicipalidad,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
+                    Expanded(
+                      child: Text(
+                        asociacion.nombreMunicipalidad,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
                 if (asociacion.telefono != null || asociacion.email != null) ...[
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      if (asociacion.telefono != null) ...[
-                        Icon(Icons.phone, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          asociacion.telefono!,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                      if (asociacion.telefono != null && asociacion.email != null)
-                        const SizedBox(width: 16),
-                      if (asociacion.email != null) ...[
-                        Icon(Icons.email, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          asociacion.email!,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isSmallScreen = constraints.maxWidth < 400;
+                      
+                      if (isSmallScreen) {
+                        // En pantallas pequeñas, apilar verticalmente
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (asociacion.telefono != null) ...[
+                              Row(
+                                children: [
+                                  Icon(Icons.phone, size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      asociacion.telefono!,
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (asociacion.email != null) const SizedBox(height: 4),
+                            ],
+                            if (asociacion.email != null) ...[
+                              Row(
+                                children: [
+                                  Icon(Icons.email, size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      asociacion.email!,
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        );
+                      } else {
+                        // En pantallas normales, usar Row
+                        return Row(
+                          children: [
+                            if (asociacion.telefono != null) ...[
+                              Icon(Icons.phone, size: 16, color: Colors.grey[600]),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  asociacion.telefono!,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                            if (asociacion.telefono != null && asociacion.email != null)
+                              const SizedBox(width: 16),
+                            if (asociacion.email != null) ...[
+                              Icon(Icons.email, size: 16, color: Colors.grey[600]),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  asociacion.email!,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      }
+                    },
                   ),
                 ],
                 const SizedBox(height: 12),

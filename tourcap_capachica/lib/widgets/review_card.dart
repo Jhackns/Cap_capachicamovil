@@ -46,6 +46,7 @@ class ReviewCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         review.formattedDate,
@@ -53,11 +54,13 @@ class ReviewCard extends StatelessWidget {
                           color: Colors.grey[600],
                           fontSize: 12,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.star,

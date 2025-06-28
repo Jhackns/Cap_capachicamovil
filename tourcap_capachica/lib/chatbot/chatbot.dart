@@ -156,6 +156,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: message.isUser ? Colors.white : Colors.black87,
                   fontSize: 16,
                 ),
+                overflow: TextOverflow.visible,
               ),
             ),
           ),

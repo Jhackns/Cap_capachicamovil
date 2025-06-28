@@ -194,27 +194,57 @@ class _EmprendedoresManagementScreenState extends State<EmprendedoresManagementS
             ),
             const SizedBox(height: 12),
             // Botones de vista (cuadrícula/lista)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ToggleButtons(
-                  borderRadius: BorderRadius.circular(8),
-                  selectedColor: Colors.white,
-                  fillColor: const Color(0xFF6A1B9A),
-                  color: Colors.grey[700],
-                  constraints: const BoxConstraints(minWidth: 48, minHeight: 36),
-                  isSelected: [_isGrid, !_isGrid],
-                  onPressed: (index) {
-                    setState(() {
-                      _isGrid = index == 0;
-                    });
-                  },
-                  children: const [
-                    Icon(Icons.grid_view),
-                    Icon(Icons.view_list),
-                  ],
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 600;
+                
+                if (isSmallScreen) {
+                  // En pantallas pequeñas, centrar los botones
+                  return Center(
+                    child: ToggleButtons(
+                      borderRadius: BorderRadius.circular(8),
+                      selectedColor: Colors.white,
+                      fillColor: const Color(0xFF6A1B9A),
+                      color: Colors.grey[700],
+                      constraints: const BoxConstraints(minWidth: 48, minHeight: 36),
+                      isSelected: [_isGrid, !_isGrid],
+                      onPressed: (index) {
+                        setState(() {
+                          _isGrid = index == 0;
+                        });
+                      },
+                      children: const [
+                        Icon(Icons.grid_view),
+                        Icon(Icons.view_list),
+                      ],
+                    ),
+                  );
+                } else {
+                  // En pantallas grandes, alinear a la derecha
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ToggleButtons(
+                        borderRadius: BorderRadius.circular(8),
+                        selectedColor: Colors.white,
+                        fillColor: const Color(0xFF6A1B9A),
+                        color: Colors.grey[700],
+                        constraints: const BoxConstraints(minWidth: 48, minHeight: 36),
+                        isSelected: [_isGrid, !_isGrid],
+                        onPressed: (index) {
+                          setState(() {
+                            _isGrid = index == 0;
+                          });
+                        },
+                        children: const [
+                          Icon(Icons.grid_view),
+                          Icon(Icons.view_list),
+                        ],
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 16),
             // Lista de emprendedores

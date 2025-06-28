@@ -159,7 +159,9 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('Gestión de Reservas', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                                  Expanded(
+                                    child: Text('Gestión de Reservas', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                                  ),
                                   _buildAccionButtons(),
                                 ],
                               );
@@ -334,73 +336,198 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
         child: Center(child: Text('No se encontraron reservas.')),
       );
     }
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 2,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: MediaQuery.of(context).size.width - 40,
-          ),
-          child: DataTable(
-            columnSpacing: 16,
-            headingRowColor: MaterialStateProperty.all(Color(0xFF9C27B0).withOpacity(0.08)),
-            columns: const [
-              DataColumn(label: Text('Código')),
-              DataColumn(label: Text('Cliente')),
-              DataColumn(label: Text('Fecha Creación')),
-              DataColumn(label: Text('Servicios')),
-              DataColumn(label: Text('Estado')),
-              DataColumn(label: Text('Acciones')),
-            ],
-            rows: _filteredReservas.map((res) {
-              return DataRow(cells: [
-                DataCell(Text(res['codigo_reserva'] ?? res['codigo'] ?? '')),
-                DataCell(Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _filteredReservas.length,
+      itemBuilder: (context, index) {
+        final res = _filteredReservas[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header con código y estado
+                Row(
                   children: [
-                    Text(res['usuario']?['name'] ?? res['cliente'] ?? '', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(res['usuario']?['email'] ?? res['email'] ?? '', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    CircleAvatar(
+                      backgroundColor: const Color(0xFF9C27B0).withOpacity(0.1),
+                      child: const Icon(Icons.book_online, color: Color(0xFF9C27B0), size: 24),
+                      radius: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reserva ${res['codigo_reserva'] ?? res['codigo'] ?? 'N/A'}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Creada el ${_buildFechaText(res['created_at'] ?? res['fecha'])}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildEstadoChip(res['estado'] ?? ''),
                   ],
-                )),
-                DataCell(_buildFechaCell(res['created_at'] ?? res['fecha'])),
-                DataCell(_buildServiciosCell(res)),
-                DataCell(_buildEstadoChip(res['estado'] ?? '')),
-                DataCell(_buildAccionesCell(res)),
-              ]);
-            }).toList(),
+                ),
+                const SizedBox(height: 16),
+                
+                // Información del cliente
+                _buildInfoSection(
+                  'Cliente',
+                  Icons.person,
+                  [
+                    res['usuario']?['name'] ?? res['cliente'] ?? 'Sin nombre',
+                    res['usuario']?['email'] ?? res['email'] ?? 'Sin email',
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
+                // Servicios
+                _buildServiciosSection(res),
+                const SizedBox(height: 16),
+                
+                // Acciones
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue, size: 22),
+                      tooltip: 'Editar',
+                      onPressed: () {
+                        // TODO: Implementar edición
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red, size: 22),
+                      tooltip: 'Eliminar',
+                      onPressed: () {
+                        // TODO: Implementar eliminación
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.sync_alt, color: Colors.orange, size: 22),
+                      tooltip: 'Cambiar Estado',
+                      onPressed: () {
+                        // TODO: Implementar cambio de estado
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildAccionesCell(Map<String, dynamic> res) {
-    return Wrap(
-      spacing: 4,
+  Widget _buildInfoSection(String title, IconData icon, List<String> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        IconButton(
-          icon: Icon(Icons.edit, color: Colors.blue, size: 20),
-          tooltip: 'Editar',
-          onPressed: () {},
+        Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.grey[600]),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
         ),
-        IconButton(
-          icon: Icon(Icons.delete, color: Colors.red, size: 20),
-          tooltip: 'Eliminar',
-          onPressed: () {},
-        ),
-        IconButton(
-          icon: Icon(Icons.sync_alt, color: Colors.orange, size: 20),
-          tooltip: 'Cambiar Estado',
-          onPressed: () {},
-        ),
+        const SizedBox(height: 8),
+        ...items.map((item) => Padding(
+          padding: const EdgeInsets.only(left: 24, bottom: 4),
+          child: Text(
+            item,
+            style: const TextStyle(fontSize: 14),
+            overflow: TextOverflow.ellipsis,
+          ),
+        )).toList(),
       ],
     );
   }
 
-  Widget _buildFechaCell(dynamic fecha) {
-    if (fecha == null) return Text('-');
+  Widget _buildServiciosSection(Map<String, dynamic> res) {
+    final servicios = res['servicios'] ?? res['reserva_servicios'] ?? [];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.miscellaneous_services, size: 16, color: Colors.grey[600]),
+            const SizedBox(width: 8),
+            Text(
+              'Servicios (${servicios is List ? servicios.length : 0})',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (servicios is List && servicios.isNotEmpty) ...[
+          ...servicios.map<Widget>((s) => Padding(
+            padding: const EdgeInsets.only(left: 24, bottom: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.circle, size: 6, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    s['nombre'] ?? s['servicio']?['nombre'] ?? 'Servicio sin nombre',
+                    style: const TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          )).toList(),
+        ] else ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 24),
+            child: Text(
+              'No hay servicios asociados',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _buildFechaText(dynamic fecha) {
+    if (fecha == null) return 'Fecha no disponible';
     DateTime? dt;
     if (fecha is DateTime) {
       dt = fecha;
@@ -409,22 +536,8 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
         dt = DateTime.parse(fecha);
       } catch (_) {}
     }
-    if (dt == null) return Text(fecha.toString());
-    return Text('${dt.day.toString().padLeft(2, '0')} ${_mes(dt.month)}. ${dt.year}');
-  }
-
-  Widget _buildServiciosCell(Map<String, dynamic> res) {
-    final servicios = res['servicios'] ?? res['reserva_servicios'] ?? [];
-    if (servicios is List && servicios.isNotEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('${servicios.length} servicios', style: TextStyle(fontWeight: FontWeight.bold)),
-          ...servicios.map<Widget>((s) => Text(s['nombre'] ?? s['servicio']?['nombre'] ?? '-', style: TextStyle(fontSize: 12, color: Colors.grey[700]))).toList(),
-        ],
-      );
-    }
-    return Text('0 servicios');
+    if (dt == null) return 'Fecha inválida';
+    return '${dt.day.toString().padLeft(2, '0')} ${_mes(dt.month)}. ${dt.year}';
   }
 
   Widget _buildEstadoChip(String estado) {
