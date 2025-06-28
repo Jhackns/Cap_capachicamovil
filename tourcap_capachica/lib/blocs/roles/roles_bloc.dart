@@ -59,7 +59,7 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
       }
 
       final response = await http.delete(
-        Uri.parse(ApiConfig.getRoleUrl(event.roleId)),
+        Uri.parse(ApiConfig.getRoleByIdUrl(event.roleId)),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

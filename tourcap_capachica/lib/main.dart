@@ -6,6 +6,7 @@ import 'package:tourcap_capachica/chatbot/chatbot.dart';
 // Providers
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/reservas_provider.dart';
 import 'services/dashboard_service.dart';
 
 // Screens
@@ -36,7 +37,9 @@ void main() {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider(create: (context) => DashboardService()),
       ],
-      child: const MyApp(),
+      child: const ReservasProvider(
+        child: MyApp(),
+      ),
     ),
   );
 }

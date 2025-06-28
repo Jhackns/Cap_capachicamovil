@@ -120,7 +120,7 @@ class AsociacionesBloc extends Bloc<AsociacionesEvent, AsociacionesState> {
         return;
       }
 
-      final url = Uri.parse(ApiConfig.getAsociacionUrl(event.asociacionId));
+      final url = Uri.parse(ApiConfig.getAsociacionByIdUrl(event.asociacionId));
       final request = http.MultipartRequest('POST', url);
       request.fields['_method'] = 'PUT';
       request.headers.addAll({
@@ -176,7 +176,7 @@ class AsociacionesBloc extends Bloc<AsociacionesEvent, AsociacionesState> {
       }
 
       final response = await http.delete(
-        Uri.parse(ApiConfig.getAsociacionUrl(event.asociacionId)),
+        Uri.parse(ApiConfig.getAsociacionByIdUrl(event.asociacionId)),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

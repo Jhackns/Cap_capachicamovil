@@ -132,7 +132,7 @@ class _ExploreTabState extends State<ExploreTab> {
       _error = null;
     });
     try {
-      final url = ApiConfig.getEntrepreneursUrl();
+      final url = ApiConfig.getEmprendedoresUrl();
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -678,7 +678,7 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
     });
     try {
       // Fetch emprendedor details
-      final url = ApiConfig.getEntrepreneurByIdUrl(widget.emprendedorId);
+      final url = ApiConfig.getEmprendedorByIdUrl(widget.emprendedorId);
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -705,7 +705,7 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
         return;
       }
       // Fetch reviews
-      final reviewsUrl = ApiConfig.baseUrl + ApiConfig.apiPrefix + '/resenas/emprendedor/${widget.emprendedorId}';
+      final reviewsUrl = ApiConfig.baseUrl + '/api/resenas/emprendedor/${widget.emprendedorId}';
       final reviewsResponse = await http.get(Uri.parse(reviewsUrl));
       if (reviewsResponse.statusCode == 200) {
         final rdata = json.decode(reviewsResponse.body);
@@ -756,7 +756,7 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
     }
 
     final token = authProvider.token;
-    final url = '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}/resenas';
+    final url = '${ApiConfig.baseUrl}/api/resenas';
     
     print('URL: $url');
     print('Token being sent: $token');
@@ -875,7 +875,7 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
     
     // Probar primero el endpoint de perfil (que debería funcionar)
     try {
-      final profileUrl = '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}/profile';
+      final profileUrl = '${ApiConfig.baseUrl}/api/profile';
       print('Testing profile URL: $profileUrl');
       
       final profileHeaders = {
@@ -905,7 +905,7 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
     
     // Ahora probar el endpoint de test-auth
     try {
-      final url = '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}/test-auth';
+      final url = '${ApiConfig.baseUrl}/api/test-auth';
       print('Testing URL: $url');
       
       final headers = {
@@ -988,7 +988,7 @@ class _EmprendedorDetailScreenState extends State<EmprendedorDetailScreen> {
     }
     
     try {
-      final url = '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}/resenas';
+      final url = '${ApiConfig.baseUrl}/api/resenas';
       print('Testing review creation URL: $url');
       
       final headers = {

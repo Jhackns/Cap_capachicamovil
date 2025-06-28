@@ -70,6 +70,15 @@ class ErrorHandler {
     return 'Ha ocurrido un error inesperado. Intenta nuevamente.';
   }
 
+  static Exception handleError(dynamic error) {
+    if (error is Exception) {
+      return error;
+    }
+    
+    String message = getErrorMessage(error);
+    return Exception(message);
+  }
+
   static Widget buildErrorWidget({
     required String message,
     required VoidCallback onRetry,

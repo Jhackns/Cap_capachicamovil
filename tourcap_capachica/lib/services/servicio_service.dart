@@ -7,43 +7,51 @@ class ServicioService {
   final AuthService _authService = AuthService();
 
   Future<List<Map<String, dynamic>>> getServicios() async {
-    final token = await _authService.getToken();
-    if (token == null) throw Exception('Token no disponible');
-    
-    final url = ApiConfig.getServiciosUrl();
-    print('🔍 Intentando cargar servicios desde: $url');
-    
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
-    );
-    
-    print('📡 Response status: ${response.statusCode}');
-    print('📡 Response body: ${response.body}');
-    
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      print('📊 Data decoded: $data');
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('Token no disponible');
       
-      if (data['success']) {
-        List<Map<String, dynamic>> servicios;
-        if (data['data'] is Map && data['data'].containsKey('data')) {
-          servicios = List<Map<String, dynamic>>.from(data['data']['data']);
+      final url = ApiConfig.getServiciosUrl();
+      print('🔍 Intentando cargar servicios desde: $url');
+      print('🔑 Token presente: ${token.isNotEmpty ? "SÍ" : "NO"}');
+      print('🔑 Token length: ${token.length}');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('📊 Data decoded: $data');
+        
+        if (data['success'] == true) {
+          List<Map<String, dynamic>> servicios;
+          if (data['data'] is Map && data['data'].containsKey('data')) {
+            servicios = List<Map<String, dynamic>>.from(data['data']['data']);
+          } else {
+            servicios = List<Map<String, dynamic>>.from(data['data']);
+          }
+          print('✅ Servicios cargados: ${servicios.length}');
+          return servicios;
         } else {
-          servicios = List<Map<String, dynamic>>.from(data['data']);
+          print('❌ Error en respuesta: ${data['message']}');
+          throw Exception(data['message'] ?? 'Error al cargar servicios');
         }
-        print('✅ Servicios cargados: ${servicios.length}');
-        return servicios;
       } else {
-        print('❌ Error en respuesta: ${data['message']}');
-        throw Exception(data['message'] ?? 'Error al cargar servicios');
+        print('❌ HTTP Error: ${response.statusCode}');
+        throw Exception('Error: ${response.statusCode}');
       }
-    } else {
-      print('❌ HTTP Error: ${response.statusCode}');
-      throw Exception('Error: ${response.statusCode}');
+    } catch (e) {
+      print('❌ Error en getServicios: $e');
+      rethrow;
     }
   }
 
@@ -199,7 +207,7 @@ class ServicioService {
     final token = await _authService.getToken();
     if (token == null) throw Exception('Token no disponible');
     final response = await http.get(
-      Uri.parse(ApiConfig.getEntrepreneursUrl()),
+      Uri.parse(ApiConfig.getEmprendedoresUrl()),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -305,6 +313,34 @@ class ServicioService {
     } else {
       final errorData = json.decode(response.body);
       throw Exception(errorData['message'] ?? 'Error: ${response.statusCode}');
+    }
+  }
+
+  // Método para obtener servicios por emprendedor
+  Future<List<Map<String, dynamic>>> getServiciosByEmprendedor(int emprendedorId) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('Token no disponible');
+    
+    final response = await http.get(
+      Uri.parse('${ApiConfig.getServiciosUrl()}/emprendedor/$emprendedorId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success']) {
+        if (data['data'] is Map && data['data'].containsKey('data')) {
+          return List<Map<String, dynamic>>.from(data['data']['data']);
+        }
+        return List<Map<String, dynamic>>.from(data['data']);
+      } else {
+        throw Exception(data['message'] ?? 'Error al cargar servicios del emprendedor');
+      }
+    } else {
+      throw Exception('Error: ${response.statusCode}');
     }
   }
 } 

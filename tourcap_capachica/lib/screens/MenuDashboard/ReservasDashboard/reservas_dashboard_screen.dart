@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../blocs/reservas/reservas_bloc.dart';
+import '../../../blocs/reservas/reservas_event.dart';
 import '../../../services/dashboard_service.dart';
+import 'reserva_form_screen.dart';
 
 class ReservasDashboardScreen extends StatefulWidget {
   @override
@@ -88,7 +92,25 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
       _error = null;
     });
     try {
+      print('=== FETCHING RESERVAS ===');
       final reservas = await _dashboardService.getReservas();
+      print('Reservas obtenidas: ${reservas.length}');
+      
+      if (reservas.isNotEmpty) {
+        print('=== ESTRUCTURA DE LA PRIMERA RESERVA ===');
+        final primeraReserva = reservas.first;
+        primeraReserva.forEach((key, value) {
+          print('$key: $value (${value.runtimeType})');
+        });
+        
+        // Verificar campos específicos
+        print('Código: ${primeraReserva['codigo_reserva'] ?? primeraReserva['codigo']}');
+        print('Cliente: ${primeraReserva['usuario'] ?? primeraReserva['cliente']}');
+        print('Total: ${primeraReserva['total']}');
+        print('Estado: ${primeraReserva['estado']}');
+        print('Servicios: ${primeraReserva['servicios'] ?? primeraReserva['reserva_servicios']}');
+      }
+      
       setState(() {
         _reservas = reservas;
         _filteredReservas = reservas;
@@ -96,6 +118,7 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
         _updateResumen();
       });
     } catch (e) {
+      print('Error al obtener reservas: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -228,7 +251,18 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
           label: Text('Ver Calendario'),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ReservaFormScreen(),
+              ),
+            ).then((result) {
+              if (result == true) {
+                _fetchReservas();
+              }
+            });
+          },
           icon: Icon(Icons.add),
           label: Text('Nueva Reserva'),
           style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF9C27B0)),
@@ -331,104 +365,167 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
 
   Widget _buildTablaReservas(BuildContext context) {
     if (_filteredReservas.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Center(child: Text('No se encontraron reservas.')),
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.inbox_outlined, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('No se encontraron reservas', style: TextStyle(fontSize: 18, color: Colors.grey)),
+              ],
+            ),
+          ),
+        ),
       );
     }
-    
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _filteredReservas.length,
-      itemBuilder: (context, index) {
-        final res = _filteredReservas[index];
+
+    // Usar cards para móvil en lugar de tabla
+    return Column(
+      children: _filteredReservas.map((reserva) {
+        // Extraer datos de la reserva
+        final codigo = reserva['codigo_reserva'] ?? reserva['codigo'] ?? 'N/A';
+        final cliente = reserva['usuario'] ?? reserva['cliente'];
+        final clienteNombre = cliente is Map ? cliente['name'] : cliente?.toString() ?? 'N/A';
+        final fechaCreacion = _formatFecha(reserva['created_at'] ?? reserva['fecha']);
+        final estado = reserva['estado'] ?? 'pendiente';
+        final total = reserva['total'] ?? 0.0;
+        
+        // Extraer servicios
+        final servicios = reserva['servicios'] ?? reserva['reserva_servicios'] ?? [];
+        final serviciosTexto = servicios.isNotEmpty 
+            ? servicios.map((s) => s['servicio']?['nombre'] ?? s['nombre'] ?? 'Servicio').join(', ')
+            : 'Sin servicios';
+        
         return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          elevation: 3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header con código y estado
+                // Primera fila: Código y Estado
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    CircleAvatar(
-                      backgroundColor: const Color(0xFF9C27B0).withOpacity(0.1),
-                      child: const Icon(Icons.book_online, color: Color(0xFF9C27B0), size: 24),
-                      radius: 24,
-                    ),
-                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Reserva ${res['codigo_reserva'] ?? res['codigo'] ?? 'N/A'}',
+                            'Código: $codigo',
                             style: const TextStyle(
-                              fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Creada el ${_buildFechaText(res['created_at'] ?? res['fecha'])}',
+                            'Cliente: $clienteNombre',
                             style: TextStyle(
-                              fontSize: 14,
                               color: Colors.grey[600],
+                              fontSize: 14,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                    _buildEstadoChip(res['estado'] ?? ''),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // Información del cliente
-                _buildInfoSection(
-                  'Cliente',
-                  Icons.person,
-                  [
-                    res['usuario']?['name'] ?? res['cliente'] ?? 'Sin nombre',
-                    res['usuario']?['email'] ?? res['email'] ?? 'Sin email',
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(estado).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _getStatusText(estado),
+                        style: TextStyle(
+                          color: _getStatusColor(estado),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 
-                // Servicios
-                _buildServiciosSection(res),
-                const SizedBox(height: 16),
-                
-                // Acciones
+                // Segunda fila: Fecha y Total
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue, size: 22),
-                      tooltip: 'Editar',
-                      onPressed: () {
-                        // TODO: Implementar edición
-                      },
+                    Text(
+                      'Fecha: $fechaCreacion',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red, size: 22),
-                      tooltip: 'Eliminar',
-                      onPressed: () {
-                        // TODO: Implementar eliminación
-                      },
+                    Text(
+                      'Total: S/ ${total.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF9C27B0),
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.sync_alt, color: Colors.orange, size: 22),
-                      tooltip: 'Cambiar Estado',
-                      onPressed: () {
-                        // TODO: Implementar cambio de estado
-                      },
+                  ],
+                ),
+                const SizedBox(height: 8),
+                
+                // Tercera fila: Servicios
+                Text(
+                  'Servicios: $serviciosTexto',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                
+                // Cuarta fila: Acciones
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _viewReserva(reserva),
+                        icon: const Icon(Icons.visibility, size: 16),
+                        label: const Text('Ver'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue,
+                          side: const BorderSide(color: Colors.blue),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _editReserva(reserva),
+                        icon: const Icon(Icons.edit, size: 16),
+                        label: const Text('Editar'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                          side: const BorderSide(color: Colors.orange),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _deleteReserva(reserva['id']),
+                        icon: const Icon(Icons.delete, size: 16),
+                        label: const Text('Eliminar'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -436,140 +533,129 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
             ),
           ),
         );
-      },
+      }).toList(),
     );
   }
 
-  Widget _buildInfoSection(String title, IconData icon, List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ...items.map((item) => Padding(
-          padding: const EdgeInsets.only(left: 24, bottom: 4),
-          child: Text(
-            item,
-            style: const TextStyle(fontSize: 14),
-            overflow: TextOverflow.ellipsis,
+  void _editReserva(Map<String, dynamic> reserva) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReservaFormScreen(reserva: reserva),
+      ),
+    ).then((_) {
+      // Recargar la lista después de editar
+      _fetchReservas();
+    });
+  }
+
+  void _viewReserva(Map<String, dynamic> reserva) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Reserva ${reserva['codigo_reserva'] ?? reserva['codigo']}'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Cliente: ${reserva['cliente']?['name'] ?? 'N/A'}'),
+              Text('Estado: ${_getStatusText(reserva['estado'])}'),
+              Text('Total: S/ ${(reserva['total'] ?? 0).toStringAsFixed(2)}'),
+              if (reserva['notas'] != null) Text('Notas: ${reserva['notas']}'),
+            ],
           ),
-        )).toList(),
-      ],
-    );
-  }
-
-  Widget _buildServiciosSection(Map<String, dynamic> res) {
-    final servicios = res['servicios'] ?? res['reserva_servicios'] ?? [];
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.miscellaneous_services, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 8),
-            Text(
-              'Servicios (${servicios is List ? servicios.length : 0})',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-          ],
         ),
-        const SizedBox(height: 8),
-        if (servicios is List && servicios.isNotEmpty) ...[
-          ...servicios.map<Widget>((s) => Padding(
-            padding: const EdgeInsets.only(left: 24, bottom: 4),
-            child: Row(
-              children: [
-                const Icon(Icons.circle, size: 6, color: Colors.grey),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    s['nombre'] ?? s['servicio']?['nombre'] ?? 'Servicio sin nombre',
-                    style: const TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          )).toList(),
-        ] else ...[
-          Padding(
-            padding: const EdgeInsets.only(left: 24),
-            child: Text(
-              'No hay servicios asociados',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-                fontStyle: FontStyle.italic,
-              ),
-            ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
           ),
         ],
-      ],
+      ),
     );
   }
 
-  String _buildFechaText(dynamic fecha) {
-    if (fecha == null) return 'Fecha no disponible';
-    DateTime? dt;
-    if (fecha is DateTime) {
-      dt = fecha;
-    } else if (fecha is String) {
-      try {
-        dt = DateTime.parse(fecha);
-      } catch (_) {}
-    }
-    if (dt == null) return 'Fecha inválida';
-    return '${dt.day.toString().padLeft(2, '0')} ${_mes(dt.month)}. ${dt.year}';
+  void _deleteReserva(int reservaId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: const Text('¿Estás seguro de que quieres eliminar esta reserva? Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<ReservasBloc>().add(DeleteReserva(reservaId));
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildEstadoChip(String estado) {
-    Color color;
+  Color _getStatusColor(String estado) {
     switch (estado.toLowerCase()) {
       case 'pendiente':
-        color = Colors.orange;
-        break;
+        return Colors.orange;
       case 'confirmada':
-        color = Colors.green;
-        break;
+        return Colors.green;
       case 'completada':
-        color = Colors.blue;
-        break;
+        return Colors.blue;
       case 'cancelada':
-        color = Colors.red;
-        break;
+        return Colors.red;
       default:
-        color = Colors.grey;
+        return Colors.grey;
     }
-    return Chip(
-      label: Text(estado[0].toUpperCase() + estado.substring(1)),
-      backgroundColor: color.withOpacity(0.15),
-      labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
-    );
   }
 
-  String _mes(int mes) {
-    const meses = [
-      '', 'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
-    ];
-    return meses[mes];
+  IconData _getStatusIcon(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'pendiente':
+        return Icons.pending;
+      case 'confirmada':
+        return Icons.done;
+      case 'completada':
+        return Icons.check_circle;
+      case 'cancelada':
+        return Icons.cancel;
+      default:
+        return Icons.help;
+    }
+  }
+
+  String _getStatusText(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'pendiente':
+        return 'Pendiente';
+      case 'confirmada':
+        return 'Confirmada';
+      case 'completada':
+        return 'Completada';
+      case 'cancelada':
+        return 'Cancelada';
+      default:
+        return 'Estado no reconocido';
+    }
+  }
+
+  String _formatFecha(dynamic fecha) {
+    if (fecha == null) return 'N/A';
+    if (fecha is DateTime) {
+      return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
+    }
+    if (fecha is String) {
+      try {
+        final parsedDate = DateTime.parse(fecha);
+        return '${parsedDate.day.toString().padLeft(2, '0')}/${parsedDate.month.toString().padLeft(2, '0')}/${parsedDate.year}';
+      } catch (_) {}
+    }
+    return 'N/A';
   }
 } 

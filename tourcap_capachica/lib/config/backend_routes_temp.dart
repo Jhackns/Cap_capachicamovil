@@ -103,6 +103,13 @@ class BackendRoutes {
   static const String reservasByEmprendedor = '/reservas/emprendedor/{emprendedorId}';
   static const String reservasByServicio = '/reservas/servicio/{servicioId}';
   
+  // Reserva Servicios
+  static const String reservaServicios = '/api/reserva-servicios';
+  static const String reservaServiciosByReserva = '/reserva-servicios/reserva/{reservaId}';
+  static const String reservaServiciosEstado = '/reserva-servicios/{id}/estado';
+  static const String reservaServiciosCalendario = '/reserva-servicios/calendario';
+  static const String reservaServiciosVerificarDisponibilidad = '/reserva-servicios/verificar-disponibilidad';
+  
   // ===== RUTAS DE ADMINISTRACIÓN =====
   
   // Roles

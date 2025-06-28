@@ -130,7 +130,6 @@ class AuthService {
       print('=== INICIO DE REGISTRO ===');
       print('URL de registro: $registerUrl');
       print('URL base: ${ApiConfig.baseUrl}');
-      print('API prefix: ${ApiConfig.apiPrefix}');
       print('Register route: ${BackendRoutes.register}');
       print('URL completa generada: $registerUrl');
       
@@ -371,5 +370,36 @@ class AuthService {
 
   Future<String?> getUsername() async {
     return await _storage.read(key: _userKey);
+  }
+
+  Future<Map<String, dynamic>> testAuth() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw Exception('No hay token disponible');
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/test-auth'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('🔍 Test Auth Status: ${response.statusCode}');
+      print('🔍 Test Auth Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Error de autenticación');
+      }
+    } catch (e) {
+      print('❌ Error en testAuth: $e');
+      rethrow;
+    }
   }
 }

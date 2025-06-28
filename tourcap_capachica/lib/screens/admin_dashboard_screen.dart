@@ -22,7 +22,7 @@ import 'MenuDashboard/Usuarios/permissions_management_screen.dart';
 import 'MenuDashboard/AsociacionesDashboard/asociaciones_management_screen.dart';
 import 'MenuDashboard/ServiciosDashboard/servicios_management_screen.dart';
 import '../blocs/servicios/servicios_bloc.dart';
-import '../../../blocs/servicios/servicios_event.dart';
+import '../blocs/servicios/servicios_event.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -546,6 +546,61 @@ class _DashboardContentState extends State<_DashboardContent> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // Botón temporal para probar rutas
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final results = await widget.dashboardService.testRoutes();
+                  if (mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Resultados de Prueba'),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: results.entries.map((entry) {
+                              final data = entry.value as Map<String, dynamic>;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${entry.key.toUpperCase()}:',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text('Status: ${data['status']}'),
+                                  Text('Success: ${data['success']}'),
+                                  if (data['error'] != null)
+                                    Text('Error: ${data['error']}'),
+                                  if (data['body'] != null)
+                                    Text('Body: ${data['body']}'),
+                                  const SizedBox(height: 8),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('🔍 Probar Rutas'),
+            ),
 
             // Tarjetas de estadísticas
             Text(

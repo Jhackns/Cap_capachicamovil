@@ -108,7 +108,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
         return;
       }
 
-      final url = Uri.parse(ApiConfig.getUserUrl(event.userId));
+      final url = Uri.parse(ApiConfig.getUserByIdUrl(event.userId));
       final request = http.MultipartRequest('POST', url);
       request.fields['_method'] = 'PUT';
       request.headers.addAll({
@@ -172,7 +172,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
       }
 
       final response = await http.delete(
-        Uri.parse(ApiConfig.getUserUrl(event.userId)),
+        Uri.parse(ApiConfig.getUserByIdUrl(event.userId)),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -200,7 +200,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
         return;
       }
 
-      final url = ApiConfig.getUserUrl(event.userId) + '/activate';
+      final url = ApiConfig.getUserByIdUrl(event.userId) + '/activate';
       final response = await http.post(
         Uri.parse(url),
         headers: {
@@ -230,7 +230,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
         return;
       }
 
-      final url = ApiConfig.getUserUrl(event.userId) + '/deactivate';
+      final url = ApiConfig.getUserByIdUrl(event.userId) + '/deactivate';
       final response = await http.post(
         Uri.parse(url),
         headers: {

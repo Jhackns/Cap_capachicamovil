@@ -4,7 +4,7 @@ import '../config/api_config.dart';
 import '../services/auth_service.dart';
 
 class EmprendedorService {
-  final String baseUrl = ApiConfig.getEntrepreneursUrl();
+  final String baseUrl = ApiConfig.getEmprendedoresUrl();
   final AuthService _authService = AuthService();
 
   Future<Map<String, String>> _getAuthHeaders() async {

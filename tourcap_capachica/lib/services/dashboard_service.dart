@@ -24,6 +24,16 @@ class DashboardService {
         throw Exception('No hay token de autenticación');
       }
 
+      // Probar autenticación primero
+      try {
+        final authTest = await _authService.testAuth();
+        print('✅ Autenticación exitosa: ${authTest['user']['name']}');
+        print('✅ Roles: ${authTest['user']['roles']}');
+        print('✅ Permisos: ${authTest['user']['permissions']}');
+      } catch (e) {
+        print('❌ Error de autenticación: $e');
+      }
+
       // Obtener estadísticas del dashboard
       final response = await http.get(
         Uri.parse(ApiConfig.getDashboardSummaryUrl()),
@@ -87,7 +97,7 @@ class DashboardService {
             'email': user['email'] ?? '',
             'roles': user['roles'] ?? [],
             'active': user['active'] ?? false,
-          }).toList();
+          }).cast<Map<String, dynamic>>().toList();
         }
       }
 
@@ -164,19 +174,38 @@ class DashboardService {
         throw Exception('No hay token de autenticación');
       }
 
+      print('--- GET USERS ---');
+      print('URL: ${ApiConfig.getUsersUrl()}');
+      print('Token: ${token.isNotEmpty ? "Presente" : "NULO"}');
+
       final response = await http.get(
         Uri.parse(ApiConfig.getUsersUrl()),
         headers: _getAuthHeaders(token),
       );
 
+      print('Get Users Status Code: ${response.statusCode}');
+      print('Get Users Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(data['data']['data'] ?? []);
+          // Soporte para respuestas paginadas (data: { data: [] }) y no paginadas (data: [])
+          if (data['data'] is Map && data['data'].containsKey('data')) {
+            return List<Map<String, dynamic>>.from(data['data']['data']);
+          } else if (data['data'] is List) {
+            return List<Map<String, dynamic>>.from(data['data']);
+          } else {
+            print('Estructura de datos inesperada: ${data['data']}');
+            return [];
+          }
+        } else {
+          print('Error en respuesta: ${data['message']}');
+          return [];
         }
+      } else {
+        print('Error HTTP: ${response.statusCode}');
+        return [];
       }
-
-      return [];
     } catch (e) {
       print('Error al obtener usuarios: $e');
       return [];
@@ -289,7 +318,7 @@ class DashboardService {
         throw Exception('No hay token de autenticación');
       }
       final response = await http.put(
-        Uri.parse(ApiConfig.getRoleUrl(id)),
+        Uri.parse(ApiConfig.getRoleByIdUrl(id)),
         headers: _getAuthHeaders(token),
         body: json.encode({
           'name': name,
@@ -431,5 +460,75 @@ class DashboardService {
       print('Error al obtener reservas: $e');
       return [];
     }
+  }
+
+  // Método para probar rutas específicas
+  Future<Map<String, dynamic>> testRoutes() async {
+    final token = await _authService.getToken();
+    if (token == null) {
+      throw Exception('No hay token de autenticación');
+    }
+
+    final results = <String, dynamic>{};
+
+    // Probar ruta de servicios
+    try {
+      final serviciosResponse = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/servicios'),
+        headers: _getAuthHeaders(token),
+      );
+      results['servicios'] = {
+        'status': serviciosResponse.statusCode,
+        'success': serviciosResponse.statusCode == 200,
+        'body': serviciosResponse.body.substring(0, 100) + '...',
+      };
+    } catch (e) {
+      results['servicios'] = {
+        'status': 'error',
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+
+    // Probar ruta de emprendedores
+    try {
+      final emprendedoresResponse = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/emprendedores'),
+        headers: _getAuthHeaders(token),
+      );
+      results['emprendedores'] = {
+        'status': emprendedoresResponse.statusCode,
+        'success': emprendedoresResponse.statusCode == 200,
+        'body': emprendedoresResponse.body.substring(0, 100) + '...',
+      };
+    } catch (e) {
+      results['emprendedores'] = {
+        'status': 'error',
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+
+    // Probar ruta de municipalidades
+    try {
+      final municipalidadesResponse = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/municipalidad'),
+        headers: _getAuthHeaders(token),
+      );
+      results['municipalidades'] = {
+        'status': municipalidadesResponse.statusCode,
+        'success': municipalidadesResponse.statusCode == 200,
+        'body': municipalidadesResponse.body.substring(0, 100) + '...',
+      };
+    } catch (e) {
+      results['municipalidades'] = {
+        'status': 'error',
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+
+    print('🔍 Test Routes Results: $results');
+    return results;
   }
 } 
