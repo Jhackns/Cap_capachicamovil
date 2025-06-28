@@ -114,6 +114,7 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Theme.of(context).cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -121,79 +122,113 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
           children: [
             const Text('Filtros de búsqueda', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF9C27B0))),
             const SizedBox(height: 12),
-            // Primera fila: búsqueda y emprendedor
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      labelText: 'Buscar por nombre o descripción',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (_) => _applyFilters(),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 1,
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedEmprendedor,
-                    items: _emprendedores.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    onChanged: (v) {
-                      setState(() => _selectedEmprendedor = v ?? 'Todos');
-                      _applyFilters();
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Emprendedor',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
+            // Primera fila: búsqueda
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Buscar por nombre o descripción',
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).scaffoldBackgroundColor,
+              ),
+              onChanged: (_) => _applyFilters(),
             ),
             const SizedBox(height: 12),
-            // Segunda fila: categoría y estado
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedCategoria,
-                    items: _categorias.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                    onChanged: (v) {
-                      setState(() => _selectedCategoria = v ?? 'Todos');
-                      _applyFilters();
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Categoría',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 1,
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedEstado,
-                    items: const [
-                      DropdownMenuItem(value: 'Todos', child: Text('Todos')),
-                      DropdownMenuItem(value: 'Activo', child: Text('Activo')),
-                      DropdownMenuItem(value: 'Inactivo', child: Text('Inactivo')),
+            // Segunda fila: emprendedor, categoría, estado - Responsive
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 600;
+                
+                if (isSmallScreen) {
+                  // En pantallas pequeñas, apilar verticalmente
+                  return Column(
+                    children: [
+                      _buildDropdownFilter(
+                        value: _selectedEmprendedor,
+                        items: _emprendedores,
+                        label: 'Emprendedor',
+                        onChanged: (v) {
+                          setState(() => _selectedEmprendedor = v ?? 'Todos');
+                          _applyFilters();
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdownFilter(
+                              value: _selectedCategoria,
+                              items: _categorias,
+                              label: 'Categoría',
+                              onChanged: (v) {
+                                setState(() => _selectedCategoria = v ?? 'Todos');
+                                _applyFilters();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildDropdownFilter(
+                              value: _selectedEstado,
+                              items: const ['Todos', 'Activo', 'Inactivo'],
+                              label: 'Estado',
+                              onChanged: (v) {
+                                setState(() => _selectedEstado = v ?? 'Todos');
+                                _applyFilters();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
-                    onChanged: (v) {
-                      setState(() => _selectedEstado = v ?? 'Todos');
-                      _applyFilters();
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Estado',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
+                  );
+                } else {
+                  // En pantallas grandes, usar Wrap
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(
+                        width: 220,
+                        child: _buildDropdownFilter(
+                          value: _selectedEmprendedor,
+                          items: _emprendedores,
+                          label: 'Emprendedor',
+                          onChanged: (v) {
+                            setState(() => _selectedEmprendedor = v ?? 'Todos');
+                            _applyFilters();
+                          },
+                        ),
+                      ),
+                      SizedBox(
+                        width: 180,
+                        child: _buildDropdownFilter(
+                          value: _selectedCategoria,
+                          items: _categorias,
+                          label: 'Categoría',
+                          onChanged: (v) {
+                            setState(() => _selectedCategoria = v ?? 'Todos');
+                            _applyFilters();
+                          },
+                        ),
+                      ),
+                      SizedBox(
+                        width: 140,
+                        child: _buildDropdownFilter(
+                          value: _selectedEstado,
+                          items: const ['Todos', 'Activo', 'Inactivo'],
+                          label: 'Estado',
+                          onChanged: (v) {
+                            setState(() => _selectedEstado = v ?? 'Todos');
+                            _applyFilters();
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 16),
             Align(
@@ -201,8 +236,8 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
               child: ElevatedButton(
                 onPressed: _applyFilters,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9C27B0),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
@@ -211,6 +246,23 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownFilter({
+    required String value,
+    required List<String> items,
+    required String label,
+    required Function(String?) onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
       ),
     );
   }
@@ -231,6 +283,7 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           elevation: 3,
+          color: Theme.of(context).cardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           child: Padding(
             padding: const EdgeInsets.all(18),
@@ -240,8 +293,8 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: const Color(0xFF9C27B0).withOpacity(0.1),
-                      child: const Icon(Icons.miscellaneous_services_rounded, color: Color(0xFF9C27B0), size: 28),
+                      backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                      child: Icon(Icons.miscellaneous_services_rounded, color: Theme.of(context).colorScheme.secondary, size: 28),
                       radius: 28,
                     ),
                     const SizedBox(width: 16),
@@ -249,9 +302,18 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(servicio.nombre, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text(
+                            servicio.nombre, 
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           const SizedBox(height: 4),
-                          Text(servicio.descripcion, style: TextStyle(color: Colors.grey[700], fontSize: 15)),
+                          Text(
+                            servicio.descripcion, 
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).hintColor),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
                         ],
                       ),
                     ),
@@ -259,34 +321,38 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.attach_money, color: Colors.green, size: 20),
-                    const SizedBox(width: 4),
-                    Text('S/. ${servicio.precio.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.person, color: Color(0xFF7B1FA2), size: 20),
-                    const SizedBox(width: 4),
-                    Text(servicio.emprendedor, style: const TextStyle(fontWeight: FontWeight.w500)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.category, color: Colors.orange, size: 20),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(servicio.categoriasText, style: const TextStyle(fontWeight: FontWeight.w500)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.schedule, color: Colors.blue, size: 20),
-                    const SizedBox(width: 4),
-                    Text(servicio.horariosText, style: const TextStyle(fontWeight: FontWeight.w500)),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isSmallScreen = constraints.maxWidth < 400;
+                    
+                    if (isSmallScreen) {
+                      // En pantallas muy pequeñas, apilar verticalmente
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildInfoRow(Icons.attach_money, 'S/. ${servicio.precio.toStringAsFixed(2)}', Colors.green),
+                          const SizedBox(height: 8),
+                          _buildInfoRow(Icons.person, servicio.emprendedor, const Color(0xFF7B1FA2)),
+                          const SizedBox(height: 8),
+                          _buildInfoRow(Icons.category, servicio.categoriasText, Colors.orange),
+                          const SizedBox(height: 8),
+                          _buildInfoRow(Icons.schedule, servicio.horariosText, Colors.blue),
+                        ],
+                      );
+                    } else {
+                      // En pantallas normales, usar Wrap
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 8,
+                        children: [
+                          _buildInfoRow(Icons.attach_money, 'S/. ${servicio.precio.toStringAsFixed(2)}', Colors.green),
+                          _buildInfoRow(Icons.person, servicio.emprendedor, const Color(0xFF7B1FA2)),
+                          _buildInfoRow(Icons.category, servicio.categoriasText, Colors.orange),
+                          _buildInfoRow(Icons.schedule, servicio.horariosText, Colors.blue),
+                        ],
+                      );
+                    }
+                  },
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -320,6 +386,23 @@ class _ServiciosManagementScreenState extends State<ServiciosManagementScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            text, 
+            style: const TextStyle(fontWeight: FontWeight.w500),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
