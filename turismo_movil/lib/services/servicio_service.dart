@@ -336,12 +336,18 @@ class ServicioService {
   // Método para verificar disponibilidad de un servicio
   Future<bool> verificarDisponibilidad(int servicioId, String fecha, String horaInicio, String horaFin) async {
     try {
+      final url = '${ApiConfig.getServiciosVerificarDisponibilidadUrl()}?servicio_id=$servicioId&fecha=$fecha&hora_inicio=$horaInicio&hora_fin=$horaFin';
+      print('🔍 URL de verificación: $url');
+      
       final response = await http.get(
-        Uri.parse('${ApiConfig.getServiciosVerificarDisponibilidadUrl()}?servicio_id=$servicioId&fecha=$fecha&hora_inicio=$horaInicio&hora_fin=$horaFin'),
+        Uri.parse(url),
         headers: {
           'Accept': 'application/json',
         },
       );
+      
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

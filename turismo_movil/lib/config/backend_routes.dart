@@ -51,7 +51,7 @@ class BackendRoutes {
   static const String servicios = '/api/servicios';
   static const String serviciosByEmprendedor = '/servicios/emprendedor/{emprendedorId}';
   static const String serviciosByCategoria = '/servicios/categoria/{categoriaId}';
-  static const String serviciosVerificarDisponibilidad = '/servicios/verificar-disponibilidad';
+  static const String serviciosVerificarDisponibilidad = '/api/servicios/verificar-disponibilidad';
   static const String serviciosByUbicacion = '/servicios/ubicacion';
   
   // Categorías
