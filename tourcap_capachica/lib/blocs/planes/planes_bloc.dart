@@ -222,6 +222,13 @@ class PlanesBloc extends Bloc<PlanesEvent, PlanesState> {
   }
 
   void _onFilterPlanes(FilterPlanes event, Emitter<PlanesState> emit) {
+    print('🔍 Aplicando filtros en BLoC:');
+    print('  - Búsqueda: "${event.searchQuery}"');
+    print('  - Estado: ${event.estado}');
+    print('  - Dificultad: ${event.dificultad}');
+    print('  - Público: ${event.publico}');
+    print('  - Total planes antes de filtrar: ${_planes.length}');
+    
     _filteredPlanes = _planes.where((plan) {
       // Filtro por búsqueda
       final nombre = (plan['nombre'] ?? '').toString().toLowerCase();
@@ -232,20 +239,61 @@ class PlanesBloc extends Bloc<PlanesEvent, PlanesState> {
 
       // Filtro por estado
       final estado = (plan['estado'] ?? '').toString();
-      final matchesEstado = event.estado == 'Todos' || estado == event.estado.toLowerCase();
+      bool matchesEstado;
+      if (event.estado == 'Todos') {
+        matchesEstado = true;
+      } else if (event.estado == 'Activos') {
+        matchesEstado = estado == 'activo';
+      } else if (event.estado == 'Inactivos') {
+        matchesEstado = estado == 'inactivo';
+      } else {
+        matchesEstado = estado == event.estado.toLowerCase();
+      }
 
       // Filtro por dificultad
       final dificultad = (plan['dificultad'] ?? '').toString();
-      final matchesDificultad = event.dificultad == 'Todas' || dificultad == event.dificultad.toLowerCase();
+      bool matchesDificultad;
+      if (event.dificultad == 'Todas') {
+        matchesDificultad = true;
+      } else if (event.dificultad == 'Fácil') {
+        matchesDificultad = dificultad == 'facil' || dificultad == 'fácil';
+      } else if (event.dificultad == 'Moderado') {
+        matchesDificultad = dificultad == 'moderado';
+      } else if (event.dificultad == 'Difícil') {
+        matchesDificultad = dificultad == 'dificil' || dificultad == 'difícil';
+      } else {
+        matchesDificultad = dificultad == event.dificultad.toLowerCase();
+      }
 
       // Filtro por público
       final esPublico = plan['es_publico'] ?? false;
-      final matchesPublico = event.publico == 'Todos' ||
-          (event.publico == 'Públicos' && esPublico == true) ||
-          (event.publico == 'Privados' && esPublico == false);
+      bool matchesPublico;
+      if (event.publico == 'Todos') {
+        matchesPublico = true;
+      } else if (event.publico == 'Públicos') {
+        matchesPublico = esPublico == true;
+      } else if (event.publico == 'Privados') {
+        matchesPublico = esPublico == false;
+      } else {
+        matchesPublico = true;
+      }
 
-      return matchesQuery && matchesEstado && matchesDificultad && matchesPublico;
+      final matches = matchesQuery && matchesEstado && matchesDificultad && matchesPublico;
+      
+      if (matches) {
+        print('✅ Plan "${plan['nombre']}" pasa todos los filtros');
+      } else {
+        print('❌ Plan "${plan['nombre']}" no pasa filtros:');
+        print('   - Query: $matchesQuery (${event.searchQuery.isEmpty ? "vacío" : "no coincide"})');
+        print('   - Estado: $matchesEstado (plan: $estado, filtro: ${event.estado})');
+        print('   - Dificultad: $matchesDificultad (plan: $dificultad, filtro: ${event.dificultad})');
+        print('   - Público: $matchesPublico (plan: $esPublico, filtro: ${event.publico})');
+      }
+      
+      return matches;
     }).toList();
+
+    print('📊 Planes después de filtrar: ${_filteredPlanes.length}');
 
     emit(PlanesLoaded(
       planes: _planes,

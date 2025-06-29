@@ -4,6 +4,7 @@ import '../../../blocs/planes/planes_bloc.dart';
 import '../../../blocs/planes/planes_event.dart';
 import '../../../blocs/planes/planes_state.dart';
 import 'plan_form_screen.dart';
+import '../../../services/dashboard_service.dart';
 
 class PlanesManagementScreen extends StatefulWidget {
   const PlanesManagementScreen({Key? key}) : super(key: key);
@@ -18,8 +19,9 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
   String _selectedEstado = 'Todos';
   String _selectedDificultad = 'Todas';
   String _selectedPublico = 'Todos';
+  final _dashboardService = DashboardService();
 
-  final List<String> _estadoOptions = ['Todos', 'Activos', 'Inactivos', 'Borradores'];
+  final List<String> _estadoOptions = ['Todos', 'Activos', 'Inactivos'];
   final List<String> _dificultadOptions = ['Todas', 'Fácil', 'Moderado', 'Difícil'];
   final List<String> _publicoOptions = ['Todos', 'Públicos', 'Privados'];
 
@@ -38,6 +40,12 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
   }
 
   void _applyFilters() {
+    print('🔍 Aplicando filtros:');
+    print('  - Búsqueda: "${_searchController.text}"');
+    print('  - Estado: $_selectedEstado');
+    print('  - Dificultad: $_selectedDificultad');
+    print('  - Público: $_selectedPublico');
+    
     context.read<PlanesBloc>().add(FilterPlanes(
       searchQuery: _searchController.text,
       estado: _selectedEstado,
@@ -60,6 +68,7 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
+        heroTag: 'planes_fab',
         onPressed: () {
           Navigator.push(
             context,
@@ -224,27 +233,20 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
             Expanded(
               child: BlocConsumer<PlanesBloc, PlanesState>(
                 listener: (context, state) {
-                  if (state is PlanCreated || state is PlanUpdated || state is PlanDeleted) {
+                  // Solo mostrar mensajes para operaciones que no manejamos manualmente
+                  if (state is PlanCreated) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          state is PlanCreated ? 'Plan creado exitosamente' :
-                          state is PlanUpdated ? 'Plan actualizado exitosamente' :
-                          'Plan eliminado exitosamente',
-                        ),
+                      const SnackBar(
+                        content: Text('Plan creado exitosamente'),
                         backgroundColor: Colors.green,
                       ),
                     );
-                  } else if (state is PlanesError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
                   }
+                  // No mostrar errores aquí para evitar conflictos con SnackBars manuales
                 },
                 builder: (context, state) {
+                  print('🔄 Estado actual del BLoC: ${state.runtimeType}');
+                  
                   if (state is PlanesLoading) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (state is PlanesError) {
@@ -264,6 +266,9 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
                       ),
                     );
                   } else if (state is PlanesLoaded) {
+                    print('📊 Planes cargados: ${state.planes.length}');
+                    print('📊 Planes filtrados: ${state.filteredPlanes.length}');
+                    
                     if (state.filteredPlanes.isEmpty) {
                       return const Center(
                         child: Column(
@@ -279,6 +284,7 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
 
                     return RefreshIndicator(
                       onRefresh: () async {
+                        print('🔄 Refreshing planes...');
                         context.read<PlanesBloc>().add(LoadPlanes());
                       },
                       child: ListView.builder(
@@ -308,7 +314,7 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
     final precioRaw = plan['precio_total'] ?? 0.0;
     final precio = precioRaw is String ? double.tryParse(precioRaw) ?? 0.0 : (precioRaw is num ? precioRaw.toDouble() : 0.0);
     final capacidad = plan['capacidad'] ?? 0;
-    final estado = plan['estado'] ?? 'borrador';
+    final estado = plan['estado'] ?? 'activo';
     final dificultad = plan['dificultad'] ?? 'moderado';
     final esPublico = plan['es_publico'] ?? false;
     
@@ -645,7 +651,7 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
               const SizedBox(height: 8),
               Text('Capacidad: ${plan['capacidad'] ?? 0} cupos'),
               const SizedBox(height: 8),
-              Text('Estado: ${_getEstadoText(plan['estado'] ?? 'borrador')}'),
+              Text('Estado: ${_getEstadoText(plan['estado'] ?? 'activo')}'),
               const SizedBox(height: 8),
               Text('Dificultad: ${_getDificultadText(plan['dificultad'] ?? 'moderado')}'),
               const SizedBox(height: 8),
@@ -676,9 +682,11 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
     });
   }
 
-  void _togglePlanEstado(Map<String, dynamic> plan) {
-    final currentEstado = plan['estado'] ?? 'borrador';
-    final newEstado = currentEstado == 'activo' ? 'inactivo' : 'activo';
+  void _togglePlanEstado(Map<String, dynamic> plan) async {
+    final currentEstado = plan['estado'] ?? 'activo';
+    // Si el estado actual es 'borrador', convertirlo a 'activo'
+    final normalizedEstado = currentEstado == 'borrador' ? 'activo' : currentEstado;
+    final newEstado = normalizedEstado == 'activo' ? 'inactivo' : 'activo';
     
     showDialog(
       context: context,
@@ -691,9 +699,69 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              context.read<PlanesBloc>().add(TogglePlanEstado(plan['id'], newEstado));
+              
+              // Mostrar indicador de carga
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ),
+                        const SizedBox(width: 16),
+                        Text('${newEstado == 'activo' ? 'Activando' : 'Desactivando'} plan...'),
+                      ],
+                    ),
+                    backgroundColor: Colors.blue,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+              
+              try {
+                print('🔄 Cambiando estado del plan ${plan['id']} de $currentEstado a $newEstado');
+                await _dashboardService.updatePlan(plan['id'], {'estado': newEstado});
+                
+                // Resetear filtros y recargar datos
+                if (mounted) {
+                  print('🔄 Reseteando filtros y recargando planes...');
+                  setState(() {
+                    _searchController.clear();
+                    _selectedEstado = 'Todos';
+                    _selectedDificultad = 'Todas';
+                    _selectedPublico = 'Todos';
+                  });
+                  
+                  // Recargar la lista
+                  context.read<PlanesBloc>().add(LoadPlanes());
+                  
+                  // Mostrar mensaje de éxito después de un pequeño delay
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Plan ${newEstado == 'activo' ? 'activado' : 'desactivado'} exitosamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                print('❌ Error al cambiar estado del plan: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: newEstado == 'activo' ? Colors.green : Colors.orange,
@@ -705,7 +773,7 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
     );
   }
 
-  void _deletePlan(int planId) {
+  void _deletePlan(int planId) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -717,9 +785,69 @@ class _PlanesManagementScreenState extends State<PlanesManagementScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              context.read<PlanesBloc>().add(DeletePlan(planId));
+              
+              // Mostrar indicador de carga
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ),
+                        const SizedBox(width: 16),
+                        const Text('Eliminando plan...'),
+                      ],
+                    ),
+                    backgroundColor: Colors.blue,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+              
+              try {
+                print('🗑️ Eliminando plan $planId...');
+                await _dashboardService.deletePlan(planId);
+                
+                // Resetear filtros y recargar datos
+                if (mounted) {
+                  print('🔄 Reseteando filtros y recargando planes...');
+                  setState(() {
+                    _searchController.clear();
+                    _selectedEstado = 'Todos';
+                    _selectedDificultad = 'Todas';
+                    _selectedPublico = 'Todos';
+                  });
+                  
+                  // Recargar la lista
+                  context.read<PlanesBloc>().add(LoadPlanes());
+                  
+                  // Mostrar mensaje de éxito después de un pequeño delay
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Plan eliminado exitosamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                print('❌ Error al eliminar plan: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Eliminar'),

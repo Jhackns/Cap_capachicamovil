@@ -542,36 +542,71 @@ class DashboardService {
       }
 
       print('🔄 === OBTENIENDO PLANES ===');
+      print('URL: ${ApiConfig.getPlanesUrl()}');
+      print('Token presente: ${token.isNotEmpty ? "SÍ" : "NO"}');
+      print('Token (primeros 20 chars): ${token.length > 20 ? token.substring(0, 20) + "..." : token}');
+      
+      final headers = _getAuthHeaders(token);
+      print('Headers enviados: $headers');
+      
       final response = await http.get(
         Uri.parse(ApiConfig.getPlanesUrl()),
-        headers: _getAuthHeaders(token),
+        headers: headers,
       );
 
       print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body.substring(0, 200)}...');
+      print('Response Headers: ${response.headers}');
+      print('Response Body Length: ${response.body.length}');
+      print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('Data structure: ${data.keys}');
+        print('Success: ${data['success']}');
+        print('Message: ${data['message']}');
+        
         if (data['success'] == true) {
           // Soporte para respuestas paginadas y no paginadas
           if (data['data'] is Map && data['data'].containsKey('data')) {
-            return List<Map<String, dynamic>>.from(data['data']['data']);
+            final planes = List<Map<String, dynamic>>.from(data['data']['data']);
+            print('Planes obtenidos (paginados): ${planes.length}');
+            for (int i = 0; i < planes.length; i++) {
+              print('  Plan $i: ${planes[i]['nombre']} (ID: ${planes[i]['id']}, Estado: ${planes[i]['estado']})');
+            }
+            return planes;
           } else if (data['data'] is List) {
-            return List<Map<String, dynamic>>.from(data['data']);
+            final planes = List<Map<String, dynamic>>.from(data['data']);
+            print('Planes obtenidos (lista): ${planes.length}');
+            for (int i = 0; i < planes.length; i++) {
+              print('  Plan $i: ${planes[i]['nombre']} (ID: ${planes[i]['id']}, Estado: ${planes[i]['estado']})');
+            }
+            return planes;
           } else {
             print('Estructura de datos inesperada: ${data['data']}');
+            print('Tipo de data: ${data['data'].runtimeType}');
             return [];
           }
         } else {
           print('Error en respuesta: ${data['message']}');
+          print('Error details: ${data}');
           return [];
         }
+      } else if (response.statusCode == 401) {
+        print('❌ Error 401: No autorizado - Token inválido o expirado');
+        print('Response: ${response.body}');
+        throw Exception('Token de autenticación inválido o expirado');
+      } else if (response.statusCode == 403) {
+        print('❌ Error 403: Prohibido - Sin permisos para acceder a este recurso');
+        print('Response: ${response.body}');
+        throw Exception('No tienes permisos para acceder a este recurso');
       } else {
         print('Error HTTP: ${response.statusCode}');
+        print('Error Body: ${response.body}');
         return [];
       }
     } catch (e) {
       print('Error al obtener planes: $e');
+      print('Stack trace: ${StackTrace.current}');
       return [];
     }
   }
@@ -635,6 +670,98 @@ class DashboardService {
     } catch (e) {
       print('Error al obtener categorías: $e');
       return [];
+    }
+  }
+
+  // ===== CRUD PLANES =====
+
+  Future<Map<String, dynamic>> createPlan(Map<String, dynamic> planData) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.getPlanesUrl()),
+        headers: {
+          ..._getAuthHeaders(token),
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(planData),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return data['data'];
+        } else {
+          throw Exception(data['message'] ?? 'Error al crear el plan');
+        }
+      } else {
+        throw Exception('Error ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('Error al crear plan: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updatePlan(int planId, Map<String, dynamic> planData) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+
+      final response = await http.put(
+        Uri.parse(ApiConfig.getPlanByIdUrl(planId)),
+        headers: {
+          ..._getAuthHeaders(token),
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(planData),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return data['data'];
+        } else {
+          throw Exception(data['message'] ?? 'Error al actualizar el plan');
+        }
+      } else {
+        throw Exception('Error ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('Error al actualizar plan: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deletePlan(int planId) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+
+      final response = await http.delete(
+        Uri.parse(ApiConfig.getPlanByIdUrl(planId)),
+        headers: _getAuthHeaders(token),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        final data = json.decode(response.body);
+        if (data['success'] == false) {
+          throw Exception(data['message'] ?? 'Error al eliminar el plan');
+        }
+      } else {
+        throw Exception('Error ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('Error al eliminar plan: $e');
+      rethrow;
     }
   }
 } 

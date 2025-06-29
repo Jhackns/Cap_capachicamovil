@@ -351,6 +351,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ===== PLANES (rutas protegidas) =====
     Route::prefix('planes')->group(function () {
+        Route::get('/', [PlanController::class, 'index']); // Listar todos los planes
         Route::post('/', [PlanController::class, 'store']); // Crear plan
         Route::put('/{id}', [PlanController::class, 'update']); // Actualizar plan
         Route::patch('/{id}', [PlanController::class, 'update']); // Actualización parcial
