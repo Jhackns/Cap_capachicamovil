@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../providers/auth_provider.dart';
-import '../services/auth_service.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/custom_app_bar.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/custom_text_field.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../services/auth_service.dart';
-import '../services/connectivity_service.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/custom_app_bar.dart';
-import '../utils/error_handler.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/auth_service.dart';
+import '../../services/connectivity_service.dart';
+import '../../widgets/custom_text_field.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../../utils/error_handler.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? message;
@@ -253,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             Navigator.pushNamedAndRemoveUntil(
                               context, 
-                              '/home',
+                              '/main',
                               (route) => false, // Elimina todas las rutas anteriores
                             );
                           },

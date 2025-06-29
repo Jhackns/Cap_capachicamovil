@@ -8,18 +8,13 @@ class ServicioService {
 
   Future<List<Map<String, dynamic>>> getServicios() async {
     try {
-      final token = await _authService.getToken();
-      if (token == null) throw Exception('Token no disponible');
-      
       final url = ApiConfig.getServiciosUrl();
       print('🔍 Intentando cargar servicios desde: $url');
-      print('🔑 Token presente: ${token.isNotEmpty ? "SÍ" : "NO"}');
-      print('🔑 Token length: ${token.length}');
+      print('🔑 Sin autenticación (ruta pública)');
       
       final response = await http.get(
         Uri.parse(url),
         headers: {
-          'Authorization': 'Bearer $token',
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
@@ -56,12 +51,9 @@ class ServicioService {
   }
 
   Future<Map<String, dynamic>> getServicioById(int id) async {
-    final token = await _authService.getToken();
-    if (token == null) throw Exception('Token no disponible');
     final response = await http.get(
       Uri.parse('${ApiConfig.getServiciosUrl()}/$id'),
       headers: {
-        'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       },
     );
@@ -229,12 +221,9 @@ class ServicioService {
   }
 
   Future<List<Map<String, dynamic>>> getCategorias() async {
-    final token = await _authService.getToken();
-    if (token == null) throw Exception('Token no disponible');
     final response = await http.get(
       Uri.parse(ApiConfig.getCategoriasUrl()),
       headers: {
-        'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       },
     );

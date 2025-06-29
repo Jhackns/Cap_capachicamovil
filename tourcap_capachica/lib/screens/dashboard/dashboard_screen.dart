@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../widgets/custom_app_bar.dart';
-import '../widgets/theme_switcher.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../../widgets/theme_switcher.dart';
 
 const Color kPurplePrimary = Color(0xFF9C27B0); // Purple 500
 
