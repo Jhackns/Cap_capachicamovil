@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'home_tab.dart';
-import '../Home/NavegationBar/Explore/explore_tab.dart';
-import 'favorites_tab.dart';
-import 'profile_tab.dart';
+import 'Explore/explore_tab.dart';
+import 'carrito/carrito_tab.dart';
+import 'profile/profile_tab.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({Key? key}) : super(key: key);
@@ -17,7 +17,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = const [
     HomeTab(),
     ExploreTab(),
-    FavoritesTab(),
+    CarritoTab(),
     ProfileTab(),
   ];
 
@@ -45,8 +45,8 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Explorar',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favoritos',
+            icon: Icon(Icons.shopping_cart),
+            label: 'Carrito',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

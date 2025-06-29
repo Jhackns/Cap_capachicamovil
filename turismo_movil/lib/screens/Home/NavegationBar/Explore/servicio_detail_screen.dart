@@ -70,12 +70,51 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
   }
 
   Future<void> _selectDate() async {
+    final diasDisponibles = widget.servicio.getDiasDisponibles();
+    
+    // Si no hay horarios configurados, mostrar mensaje
+    if (diasDisponibles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Este servicio no tiene horarios configurados. Contacta al emprendedor.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    // Encontrar la primera fecha disponible a partir de hoy
+    DateTime fechaInicial = DateTime.now();
+    final diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    
+    // Buscar la primera fecha disponible
+    for (int i = 0; i < 7; i++) {
+      final fecha = DateTime.now().add(Duration(days: i));
+      final diaSemana = diasSemana[fecha.weekday % 7];
+      
+      if (diasDisponibles.contains(diaSemana)) {
+        fechaInicial = fecha;
+        break;
+      }
+    }
+    
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: fechaInicial,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      selectableDayPredicate: (DateTime date) {
+        // Obtener el día de la semana en español
+        final diaSemana = diasSemana[date.weekday % 7];
+        
+        // Permitir seleccionar solo días en los que el servicio esté disponible
+        return diasDisponibles.contains(diaSemana);
+      },
+      helpText: 'Selecciona una fecha disponible',
+      cancelText: 'Cancelar',
+      confirmText: 'Seleccionar',
     );
+    
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
@@ -86,10 +125,45 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
   }
 
   Future<void> _selectStartTime() async {
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Primero selecciona una fecha')),
+      );
+      return;
+    }
+    
+    // Obtener horarios disponibles para el día seleccionado
+    final diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    final diaSemana = diasSemana[_selectedDate!.weekday % 7];
+    final horariosDia = widget.servicio.getHorariosPorDia(diaSemana);
+    
+    if (horariosDia.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay horarios disponibles para este día')),
+      );
+      return;
+    }
+    
+    // Obtener la hora de inicio más temprana como hora inicial sugerida
+    TimeOfDay? horaInicial;
+    if (horariosDia.isNotEmpty) {
+      final primerHorario = horariosDia.first;
+      final horaInicioStr = primerHorario['hora_inicio']?.toString() ?? '08:00:00';
+      final partes = horaInicioStr.split(':');
+      horaInicial = TimeOfDay(
+        hour: int.parse(partes[0]),
+        minute: int.parse(partes[1]),
+      );
+    }
+    
     final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: horaInicial ?? TimeOfDay.now(),
+      helpText: 'Selecciona hora de inicio',
+      cancelText: 'Cancelar',
+      confirmText: 'Seleccionar',
     );
+    
     if (picked != null) {
       setState(() {
         _selectedStartTime = picked;
@@ -100,10 +174,52 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
   }
 
   Future<void> _selectEndTime() async {
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Primero selecciona una fecha')),
+      );
+      return;
+    }
+    
+    if (_selectedStartTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Primero selecciona una hora de inicio')),
+      );
+      return;
+    }
+    
+    // Obtener horarios disponibles para el día seleccionado
+    final diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    final diaSemana = diasSemana[_selectedDate!.weekday % 7];
+    final horariosDia = widget.servicio.getHorariosPorDia(diaSemana);
+    
+    if (horariosDia.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay horarios disponibles para este día')),
+      );
+      return;
+    }
+    
+    // Obtener la hora de fin más tardía como hora final sugerida
+    TimeOfDay? horaFinal;
+    if (horariosDia.isNotEmpty) {
+      final ultimoHorario = horariosDia.last;
+      final horaFinStr = ultimoHorario['hora_fin']?.toString() ?? '18:00:00';
+      final partes = horaFinStr.split(':');
+      horaFinal = TimeOfDay(
+        hour: int.parse(partes[0]),
+        minute: int.parse(partes[1]),
+      );
+    }
+    
     final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: _selectedStartTime ?? TimeOfDay.now(),
+      initialTime: horaFinal ?? _selectedStartTime!,
+      helpText: 'Selecciona hora de fin',
+      cancelText: 'Cancelar',
+      confirmText: 'Seleccionar',
     );
+    
     if (picked != null) {
       setState(() {
         _selectedEndTime = picked;
@@ -121,21 +237,88 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
       return;
     }
 
+    // Validar que la hora de fin sea después de la hora de inicio
+    final startMinutes = _selectedStartTime!.hour * 60 + _selectedStartTime!.minute;
+    final endMinutes = _selectedEndTime!.hour * 60 + _selectedEndTime!.minute;
+    
+    if (endMinutes <= startMinutes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La hora de fin debe ser posterior a la hora de inicio'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isCheckingAvailability = true);
 
     try {
       // Formatear fecha y horas para la API
       final fecha = DateFormat('yyyy-MM-dd').format(_selectedDate!);
-      final horaInicio = _selectedStartTime!.format(context);
-      final horaFin = _selectedEndTime!.format(context);
-      
-      // Convertir formato de hora de 12h a 24h
       final horaInicio24 = _selectedStartTime!.hour.toString().padLeft(2, '0') + ':' + 
                           _selectedStartTime!.minute.toString().padLeft(2, '0') + ':00';
       final horaFin24 = _selectedEndTime!.hour.toString().padLeft(2, '0') + ':' + 
                        _selectedEndTime!.minute.toString().padLeft(2, '0') + ':00';
       
-      // Verificar disponibilidad real
+      // Obtener información del día seleccionado para mostrar mensajes más específicos
+      final diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+      final diaSemana = diasSemana[_selectedDate!.weekday % 7];
+      final horariosDia = widget.servicio.getHorariosPorDia(diaSemana);
+      
+      if (horariosDia.isEmpty) {
+        setState(() {
+          _isAvailable = false;
+          _availabilityResult = 'No disponible';
+          _isCheckingAvailability = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('El servicio no está disponible los ${_capitalize(diaSemana)}s'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      // Verificar si el horario solicitado está dentro de los horarios disponibles
+      bool horarioValido = false;
+      String horariosDisponibles = '';
+      
+      for (final horario in horariosDia) {
+        final horarioInicio = horario['hora_inicio']?.toString() ?? '';
+        final horarioFin = horario['hora_fin']?.toString() ?? '';
+        
+        // Verificar si el horario solicitado está dentro del horario disponible
+        if (_compararHoras(horaInicio24, horarioInicio) >= 0 && 
+            _compararHoras(horaFin24, horarioFin) <= 0) {
+          horarioValido = true;
+          break;
+        }
+        
+        // Agregar a la lista de horarios disponibles para el mensaje
+        if (horariosDisponibles.isNotEmpty) horariosDisponibles += ', ';
+        horariosDisponibles += '${horarioInicio.substring(0, 5)} - ${horarioFin.substring(0, 5)}';
+      }
+      
+      if (!horarioValido) {
+        setState(() {
+          _isAvailable = false;
+          _availabilityResult = 'No disponible';
+          _isCheckingAvailability = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Horario no válido. Horarios disponibles: $horariosDisponibles'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      // Si pasa la validación local, verificar disponibilidad real con la API
       final disponible = await _servicioService.verificarDisponibilidad(
         widget.servicio.id,
         fecha,
@@ -159,7 +342,7 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Servicio no disponible en la fecha y horario seleccionados. Intenta con otro horario.'),
+            content: Text('El servicio no está disponible en este horario. Intenta con otro horario.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -172,6 +355,22 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  // Método auxiliar para comparar horas
+  int _compararHoras(String hora1, String hora2) {
+    try {
+      final partes1 = hora1.split(':');
+      final partes2 = hora2.split(':');
+      
+      final minutos1 = int.parse(partes1[0]) * 60 + int.parse(partes1[1]);
+      final minutos2 = int.parse(partes2[0]) * 60 + int.parse(partes2[1]);
+      
+      return minutos1.compareTo(minutos2);
+    } catch (e) {
+      print('Error comparando horas: $hora1 vs $hora2 - $e');
+      return 0;
     }
   }
 
@@ -560,6 +759,10 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
   }
 
   Widget _buildAvailabilitySchedule() {
+    final horariosCompletos = widget.servicio.getHorariosCompletos();
+    final diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+    final nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -573,59 +776,154 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
               color: Color(0xFF6A1B9A),
             ),
           ),
-          const SizedBox(height: 12),
-          // Por ahora mostramos un horario genérico
-          // TODO: Implementar horarios reales desde la base de datos
-          _buildScheduleItem('Lunes', 'Disponible', '12:00 PM - 3:00 PM'),
-          _buildScheduleItem('Martes', 'Disponible', '12:00 PM - 3:00 PM'),
-          _buildScheduleItem('Miércoles', 'Disponible', '12:00 PM - 3:00 PM'),
-          _buildScheduleItem('Jueves', 'Disponible', '12:00 PM - 3:00 PM'),
-          _buildScheduleItem('Viernes', 'Disponible', '12:00 PM - 3:00 PM'),
-          _buildScheduleItem('Sábado', 'Disponible', '12:00 PM - 3:00 PM'),
-          _buildScheduleItem('Domingo', 'No disponible', '-'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScheduleItem(String day, String status, String time) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              day,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+          const SizedBox(height: 16),
+          
+          // Cards de horarios mejoradas
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
             ),
+            itemCount: diasSemana.length,
+            itemBuilder: (context, index) {
+              final dia = diasSemana[index];
+              final nombreDia = nombresDias[index];
+              final horario = horariosCompletos[dia] ?? 'No disponible';
+              final estaDisponible = horario != 'No disponible';
+              
+              return Container(
+                decoration: BoxDecoration(
+                  color: estaDisponible ? Colors.white : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: estaDisponible ? Colors.green.shade200 : Colors.grey.shade300,
+                    width: 1,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Día de la semana
+                      Text(
+                        nombreDia,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: estaDisponible ? const Color(0xFF6A1B9A) : Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Estado
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: estaDisponible ? Colors.green.shade100 : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: estaDisponible ? Colors.green.shade300 : Colors.grey.shade300,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          estaDisponible ? 'Disponible' : 'No disponible',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: estaDisponible ? Colors.green.shade700 : Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Horario
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            horario,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: estaDisponible ? Colors.black87 : Colors.grey.shade500,
+                              fontWeight: estaDisponible ? FontWeight.w500 : FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: status == 'Disponible' ? Colors.green.shade100 : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                fontSize: 12,
-                color: status == 'Disponible' ? Colors.green.shade700 : Colors.grey.shade700,
-                fontWeight: FontWeight.bold,
+          
+          // Mostrar información adicional si no hay horarios
+          if (widget.servicio.horarios.isEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange.shade700, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Sin horarios configurados',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Este servicio no tiene horarios configurados. Contacta al emprendedor para más información.',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            time,
-            style: const TextStyle(fontSize: 14),
-          ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildAvailabilityChecker() {
+    final diasDisponibles = widget.servicio.getDiasDisponibles();
+    final tieneHorarios = diasDisponibles.isNotEmpty;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -641,43 +939,225 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
           ),
           const SizedBox(height: 12),
           
-          // Selector de fecha
-          ListTile(
-            leading: const Icon(Icons.calendar_today),
-            title: Text(_selectedDate != null 
-              ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
-              : 'Seleccionar fecha'),
-            onTap: _selectDate,
-            tileColor: Colors.grey.shade50,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          // Mostrar información sobre días disponibles
+          if (tieneHorarios) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Días disponibles:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    diasDisponibles.map((dia) => _capitalize(dia)).join(', '),
+                    style: TextStyle(color: Colors.blue.shade700),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          
+          // Selector de fecha mejorado
+          GestureDetector(
+            onTap: tieneHorarios ? _selectDate : null,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: tieneHorarios ? Colors.white : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: tieneHorarios ? Colors.purple.shade300 : Colors.grey.shade300,
+                  width: 2,
+                ),
+                boxShadow: tieneHorarios ? [
+                  BoxShadow(
+                    color: Colors.purple.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ] : null,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    color: tieneHorarios ? Colors.purple : Colors.grey,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selectedDate != null 
+                            ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
+                            : 'Seleccionar fecha',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: tieneHorarios ? Colors.black87 : Colors.grey,
+                          ),
+                        ),
+                        if (!tieneHorarios) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'No hay horarios configurados',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (tieneHorarios)
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.purple,
+                      size: 16,
+                    ),
+                ],
+              ),
+            ),
           ),
           
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           
-          // Selectores de hora
+          // Selectores de hora mejorados
           Row(
             children: [
               Expanded(
-                child: ListTile(
-                  leading: const Icon(Icons.access_time),
-                  title: Text(_selectedStartTime != null 
-                    ? _selectedStartTime!.format(context)
-                    : 'Hora inicio'),
-                  onTap: _selectStartTime,
-                  tileColor: Colors.grey.shade50,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                child: GestureDetector(
+                  onTap: (_selectedDate != null && tieneHorarios) ? _selectStartTime : null,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: (_selectedDate != null && tieneHorarios) ? Colors.white : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: (_selectedDate != null && tieneHorarios) ? Colors.blue.shade300 : Colors.grey.shade300,
+                        width: 2,
+                      ),
+                      boxShadow: (_selectedDate != null && tieneHorarios) ? [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ] : null,
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          color: (_selectedDate != null && tieneHorarios) ? Colors.blue : Colors.grey,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _selectedStartTime != null 
+                            ? _selectedStartTime!.format(context)
+                            : 'Hora inicio',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: (_selectedDate != null && tieneHorarios) ? Colors.black87 : Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (_selectedDate == null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Selecciona fecha primero',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
-                child: ListTile(
-                  leading: const Icon(Icons.access_time),
-                  title: Text(_selectedEndTime != null 
-                    ? _selectedEndTime!.format(context)
-                    : 'Hora fin'),
-                  onTap: _selectEndTime,
-                  tileColor: Colors.grey.shade50,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                child: GestureDetector(
+                  onTap: (_selectedStartTime != null && tieneHorarios) ? _selectEndTime : null,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: (_selectedStartTime != null && tieneHorarios) ? Colors.white : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: (_selectedStartTime != null && tieneHorarios) ? Colors.green.shade300 : Colors.grey.shade300,
+                        width: 2,
+                      ),
+                      boxShadow: (_selectedStartTime != null && tieneHorarios) ? [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ] : null,
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          color: (_selectedStartTime != null && tieneHorarios) ? Colors.green : Colors.grey,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _selectedEndTime != null 
+                            ? _selectedEndTime!.format(context)
+                            : 'Hora fin',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: (_selectedStartTime != null && tieneHorarios) ? Colors.black87 : Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (_selectedStartTime == null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Selecciona hora inicio',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -689,7 +1169,7 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _isCheckingAvailability ? null : _checkAvailability,
+              onPressed: (!tieneHorarios || _isCheckingAvailability) ? null : _checkAvailability,
               icon: _isCheckingAvailability 
                 ? const SizedBox(
                     width: 16,
@@ -701,7 +1181,10 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF9C27B0),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -739,7 +1222,7 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
                   if (_availabilityResult == 'No disponible') ...[
                     const SizedBox(height: 8),
                     Text(
-                      'El servicio no está disponible en la fecha y horario seleccionados. Intenta con otro horario.',
+                      'El servicio no está disponible en la fecha y horario seleccionados. Revisa los horarios del servicio o intenta con otro horario.',
                       style: TextStyle(
                         color: Colors.red.shade700,
                         fontSize: 12,
@@ -1073,5 +1556,10 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
     if (_availabilityResult == null) return Icons.check_circle;
     if (isAvailable) return Icons.shopping_cart;
     return Icons.cancel;
+  }
+
+  String _capitalize(String str) {
+    if (str.isEmpty) return str;
+    return str[0].toUpperCase() + str.substring(1).toLowerCase();
   }
 } 

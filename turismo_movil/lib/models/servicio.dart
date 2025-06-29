@@ -106,4 +106,83 @@ class Servicio {
   String get emprendedorUbicacionText => emprendedorUbicacion ?? 'No especificada';
   String get emprendedorDescripcionText => emprendedorDescripcion ?? 'Sin descripción';
   String get emprendedorTipoServicioText => emprendedorTipoServicio ?? 'No especificado';
+
+  // Métodos para manejar horarios
+  List<Map<String, dynamic>> getHorariosPorDia(String diaSemana) {
+    return horarios.where((horario) => 
+      horario['dia_semana']?.toString().toLowerCase() == diaSemana.toLowerCase()
+    ).toList();
+  }
+
+  bool tieneHorarioParaDia(String diaSemana) {
+    return getHorariosPorDia(diaSemana).isNotEmpty;
+  }
+
+  String getHorariosTextoPorDia(String diaSemana) {
+    final horariosDia = getHorariosPorDia(diaSemana);
+    if (horariosDia.isEmpty) return 'No disponible';
+    
+    return horariosDia.map((h) {
+      final inicio = h['hora_inicio']?.toString().substring(0, 5) ?? '';
+      final fin = h['hora_fin']?.toString().substring(0, 5) ?? '';
+      return '$inicio - $fin';
+    }).join(', ');
+  }
+
+  bool estaDisponibleEnFecha(DateTime fecha, String horaInicio, String horaFin) {
+    // Obtener el día de la semana en español
+    final diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    final diaSemana = diasSemana[fecha.weekday % 7];
+    
+    // Verificar si hay horarios para ese día
+    final horariosDia = getHorariosPorDia(diaSemana);
+    if (horariosDia.isEmpty) return false;
+    
+    // Verificar si el horario solicitado está dentro de algún horario disponible
+    for (final horario in horariosDia) {
+      final horarioInicio = horario['hora_inicio']?.toString() ?? '';
+      final horarioFin = horario['hora_fin']?.toString() ?? '';
+      
+      // Verificar si el horario solicitado está dentro del horario disponible
+      // Convertir a minutos para comparación
+      if (_compararHoras(horaInicio, horarioInicio) >= 0 && 
+          _compararHoras(horaFin, horarioFin) <= 0) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // Método auxiliar para comparar horas en formato HH:MM:SS
+  int _compararHoras(String hora1, String hora2) {
+    try {
+      final partes1 = hora1.split(':');
+      final partes2 = hora2.split(':');
+      
+      final minutos1 = int.parse(partes1[0]) * 60 + int.parse(partes1[1]);
+      final minutos2 = int.parse(partes2[0]) * 60 + int.parse(partes2[1]);
+      
+      return minutos1.compareTo(minutos2);
+    } catch (e) {
+      print('Error comparando horas: $hora1 vs $hora2 - $e');
+      return 0;
+    }
+  }
+
+  List<String> getDiasDisponibles() {
+    final diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+    return diasSemana.where((dia) => tieneHorarioParaDia(dia)).toList();
+  }
+
+  Map<String, String> getHorariosCompletos() {
+    final diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+    final Map<String, String> horariosCompletos = {};
+    
+    for (final dia in diasSemana) {
+      horariosCompletos[dia] = getHorariosTextoPorDia(dia);
+    }
+    
+    return horariosCompletos;
+  }
 } 

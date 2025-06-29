@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Home/NavegationBar/home_principal/home_screen.dart';
+import 'home_principal/home_screen.dart';
 
 class HomeTab extends StatelessWidget {
   const HomeTab({Key? key}) : super(key: key);
