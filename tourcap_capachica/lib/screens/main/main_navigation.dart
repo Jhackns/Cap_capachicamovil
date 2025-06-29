@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_tab.dart';
-import 'explore_tab.dart';
+import '../Home/NavegationBar/Explore/explore_tab.dart';
 import 'favorites_tab.dart';
 import 'profile_tab.dart';
 

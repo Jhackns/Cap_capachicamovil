@@ -10,7 +10,8 @@ import 'providers/reservas_provider.dart';
 import 'services/dashboard_service.dart';
 
 // Screens
-import 'screens/home_screen.dart';
+import 'screens/Home/NavegationBar/home_principal/home_screen.dart';
+import 'screens/Home/NavegationBar/Explore/explore_tab.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
@@ -24,7 +25,6 @@ import 'screens/categories/turismo_screen.dart';
 import 'screens/categories/artesania_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/main/main_navigation.dart';
-import 'screens/main/explore_tab.dart';
 
 // Utils
 import 'utils/app_theme.dart';
@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
         initialRoute: '/main',
         routes: {
           '/main': (context) => const MainNavigation(),
-          '/home': (context) => const HomeScreen(),
+          '/Home/NavegationBar/home_principal/home_screen': (context) => const HomeScreen(),
           '/explore': (context) => const ExploreTab(),
           '/splash': (context) => const SplashScreen(),
           '/login': (context) => const LoginScreen(),

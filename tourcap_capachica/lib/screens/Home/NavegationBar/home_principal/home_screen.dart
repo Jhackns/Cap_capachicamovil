@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../widgets/theme_switcher.dart';
+import '../../../../providers/auth_provider.dart';
+import '../../../../widgets/theme_switcher.dart';
 // Importaciones de widgets
 
 class HomeScreen extends StatelessWidget {
