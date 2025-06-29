@@ -7,6 +7,7 @@ import '../../../../config/api_config.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../services/servicio_service.dart';
 import '../../../../models/servicio.dart';
+import 'servicio_detail_screen.dart';
 
 class ExploreTab extends StatefulWidget {
   const ExploreTab({Key? key}) : super(key: key);
@@ -464,9 +465,12 @@ class _ServicioCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          // TODO: Navegar a detalles del servicio
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Detalles de ${servicio.nombre}')),
+          // Navegar a detalles del servicio
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ServicioDetailScreen(servicio: servicio),
+            ),
           );
         },
         child: Column(
@@ -657,9 +661,12 @@ class _ServicioCard extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // TODO: Navegar a detalles del servicio
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Detalles de ${servicio.nombre}')),
+                        // Navegar a detalles del servicio
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ServicioDetailScreen(servicio: servicio),
+                          ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
