@@ -332,4 +332,50 @@ class ServicioService {
       throw Exception('Error: ${response.statusCode}');
     }
   }
+
+  // Método para verificar disponibilidad de un servicio
+  Future<bool> verificarDisponibilidad(int servicioId, String fecha, String horaInicio, String horaFin) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.getServiciosVerificarDisponibilidadUrl()}?servicio_id=$servicioId&fecha=$fecha&hora_inicio=$horaInicio&hora_fin=$horaFin'),
+        headers: {
+          'Accept': 'application/json',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['disponible'] ?? false;
+      } else {
+        print('❌ Error verificando disponibilidad: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Error en verificarDisponibilidad: $e');
+      return false;
+    }
+  }
+
+  // Método para obtener servicios relacionados por categoría
+  Future<List<Map<String, dynamic>>> getServiciosRelacionados(int servicioId, String categoria) async {
+    try {
+      // Primero obtener todos los servicios y filtrar localmente
+      final serviciosData = await getServicios();
+      final servicios = serviciosData.map((data) => data).toList();
+      
+      // Filtrar servicios relacionados (misma categoría, diferente servicio)
+      final relacionados = servicios.where((s) {
+        final categorias = s['categorias'] as List<dynamic>? ?? [];
+        final tieneCategoria = categorias.any((cat) => 
+          cat['nombre']?.toString().toLowerCase().contains(categoria.toLowerCase()) == true
+        );
+        return s['id'] != servicioId && tieneCategoria;
+      }).take(3).toList();
+      
+      return relacionados;
+    } catch (e) {
+      print('❌ Error en getServiciosRelacionados: $e');
+      return [];
+    }
+  }
 } 

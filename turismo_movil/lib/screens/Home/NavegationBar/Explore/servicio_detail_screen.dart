@@ -32,6 +32,7 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
   List<Servicio> _relatedServices = [];
   bool _loadingRelated = true;
   int _currentImageIndex = 0;
+  bool _isAvailable = false;
 
   @override
   void initState() {
@@ -42,24 +43,26 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
   Future<void> _loadRelatedServices() async {
     try {
       setState(() => _loadingRelated = true);
-      final serviciosData = await _servicioService.getServicios();
-      final servicios = serviciosData.map((data) => Servicio.fromJson(data)).toList();
       
-      // Filtrar servicios relacionados (misma categoría, diferente emprendedor)
+      // Obtener la primera categoría del servicio actual
       final categoria = widget.servicio.categorias.isNotEmpty ? widget.servicio.categorias.first : '';
-      final emprendedorId = widget.servicio.emprendedorId;
       
-      final relacionados = servicios.where((s) => 
-        s.id != widget.servicio.id && 
-        s.emprendedorId != emprendedorId &&
-        s.categorias.isNotEmpty &&
-        s.categorias.any((cat) => cat.toLowerCase() == categoria.toLowerCase())
-      ).take(3).toList();
-      
-      setState(() {
-        _relatedServices = relacionados;
-        _loadingRelated = false;
-      });
+      if (categoria.isNotEmpty) {
+        // Usar el nuevo método para obtener servicios relacionados
+        final serviciosData = await _servicioService.getServiciosRelacionados(
+          widget.servicio.id, 
+          categoria
+        );
+        
+        final servicios = serviciosData.map((data) => Servicio.fromJson(data)).toList();
+        
+        setState(() {
+          _relatedServices = servicios;
+          _loadingRelated = false;
+        });
+      } else {
+        setState(() => _loadingRelated = false);
+      }
     } catch (e) {
       setState(() => _loadingRelated = false);
       print('Error cargando servicios relacionados: $e');
@@ -77,6 +80,7 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
       setState(() {
         _selectedDate = picked;
         _availabilityResult = null;
+        _isAvailable = false;
       });
     }
   }
@@ -90,6 +94,7 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
       setState(() {
         _selectedStartTime = picked;
         _availabilityResult = null;
+        _isAvailable = false;
       });
     }
   }
@@ -103,6 +108,7 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
       setState(() {
         _selectedEndTime = picked;
         _availabilityResult = null;
+        _isAvailable = false;
       });
     }
   }
@@ -118,21 +124,46 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
     setState(() => _isCheckingAvailability = true);
 
     try {
-      // Simular verificación de disponibilidad
-      await Future.delayed(const Duration(seconds: 1));
+      // Formatear fecha y horas para la API
+      final fecha = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+      final horaInicio = _selectedStartTime!.format(context);
+      final horaFin = _selectedEndTime!.format(context);
       
-      // Por ahora, simulamos que está disponible
+      // Convertir formato de hora de 12h a 24h
+      final horaInicio24 = _selectedStartTime!.hour.toString().padLeft(2, '0') + ':' + 
+                          _selectedStartTime!.minute.toString().padLeft(2, '0') + ':00';
+      final horaFin24 = _selectedEndTime!.hour.toString().padLeft(2, '0') + ':' + 
+                       _selectedEndTime!.minute.toString().padLeft(2, '0') + ':00';
+      
+      // Verificar disponibilidad real
+      final disponible = await _servicioService.verificarDisponibilidad(
+        widget.servicio.id,
+        fecha,
+        horaInicio24,
+        horaFin24,
+      );
+      
       setState(() {
-        _availabilityResult = 'Disponible';
+        _isAvailable = disponible;
+        _availabilityResult = disponible ? 'Disponible' : 'No disponible';
         _isCheckingAvailability = false;
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Servicio disponible para la fecha y horario seleccionados'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (disponible) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Servicio disponible para la fecha y horario seleccionados'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Servicio no disponible en la fecha y horario seleccionados. Intenta con otro horario.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
       setState(() => _isCheckingAvailability = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -686,20 +717,35 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
                   color: _availabilityResult == 'Disponible' ? Colors.green.shade300 : Colors.red.shade300,
                 ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    _availabilityResult == 'Disponible' ? Icons.check_circle : Icons.cancel,
-                    color: _availabilityResult == 'Disponible' ? Colors.green : Colors.red,
+                  Row(
+                    children: [
+                      Icon(
+                        _availabilityResult == 'Disponible' ? Icons.check_circle : Icons.cancel,
+                        color: _availabilityResult == 'Disponible' ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _availabilityResult!,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _availabilityResult == 'Disponible' ? Colors.green.shade700 : Colors.red.shade700,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _availabilityResult!,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _availabilityResult == 'Disponible' ? Colors.green.shade700 : Colors.red.shade700,
+                  if (_availabilityResult == 'No disponible') ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'El servicio no está disponible en la fecha y horario seleccionados. Intenta con otro horario.',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -901,6 +947,49 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
   }
 
   Widget _buildActionButtons(AuthProvider authProvider) {
+    // Determinar el texto y estado del botón principal
+    String buttonText;
+    VoidCallback? onPressed;
+    bool isEnabled = true;
+    Color buttonColor = const Color(0xFF9C27B0);
+
+    if (!authProvider.isAuthenticated) {
+      buttonText = 'Iniciar Sesión';
+      onPressed = _navigateToLogin;
+    } else if (_selectedDate == null || _selectedStartTime == null || _selectedEndTime == null) {
+      buttonText = 'Seleccionar fecha y hora';
+      onPressed = () {
+        // Mostrar mensaje para seleccionar fecha y hora
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor selecciona una fecha y horario para verificar disponibilidad'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      };
+    } else if (_availabilityResult == null) {
+      buttonText = 'Verificar Disponibilidad';
+      onPressed = _isCheckingAvailability ? null : _checkAvailability;
+      isEnabled = !_isCheckingAvailability;
+    } else if (_isAvailable) {
+      buttonText = 'Agregar al Carrito';
+      onPressed = () {
+        // TODO: Implementar funcionalidad de carrito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Funcionalidad de carrito próximamente disponible'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      };
+      buttonColor = Colors.green;
+    } else {
+      buttonText = 'No Disponible';
+      onPressed = null;
+      isEnabled = false;
+      buttonColor = Colors.grey;
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -921,13 +1010,13 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
         children: [
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: authProvider.isAuthenticated ? null : _navigateToLogin,
+              onPressed: isEnabled ? onPressed : null,
               icon: Icon(
-                authProvider.isAuthenticated ? Icons.check_circle : Icons.login,
+                _getButtonIcon(authProvider.isAuthenticated, _isAvailable),
                 size: 20,
               ),
               label: Text(
-                authProvider.isAuthenticated ? 'Reservar' : 'Iniciar Sesión',
+                buttonText,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -935,7 +1024,7 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 elevation: 2,
-                backgroundColor: const Color(0xFF9C27B0),
+                backgroundColor: buttonColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -974,5 +1063,15 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
         ],
       ),
     );
+  }
+
+  IconData _getButtonIcon(bool isAuthenticated, bool isAvailable) {
+    if (!isAuthenticated) return Icons.login;
+    if (_selectedDate == null || _selectedStartTime == null || _selectedEndTime == null) {
+      return Icons.schedule;
+    }
+    if (_availabilityResult == null) return Icons.check_circle;
+    if (isAvailable) return Icons.shopping_cart;
+    return Icons.cancel;
   }
 } 
