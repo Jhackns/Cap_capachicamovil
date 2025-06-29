@@ -531,4 +531,110 @@ class DashboardService {
     print('🔍 Test Routes Results: $results');
     return results;
   }
+
+  // ===== PLANES =====
+
+  Future<List<Map<String, dynamic>>> getPlanes() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+
+      print('🔄 === OBTENIENDO PLANES ===');
+      final response = await http.get(
+        Uri.parse(ApiConfig.getPlanesUrl()),
+        headers: _getAuthHeaders(token),
+      );
+
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body.substring(0, 200)}...');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          // Soporte para respuestas paginadas y no paginadas
+          if (data['data'] is Map && data['data'].containsKey('data')) {
+            return List<Map<String, dynamic>>.from(data['data']['data']);
+          } else if (data['data'] is List) {
+            return List<Map<String, dynamic>>.from(data['data']);
+          } else {
+            print('Estructura de datos inesperada: ${data['data']}');
+            return [];
+          }
+        } else {
+          print('Error en respuesta: ${data['message']}');
+          return [];
+        }
+      } else {
+        print('Error HTTP: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('Error al obtener planes: $e');
+      return [];
+    }
+  }
+
+  // ===== EMPRENDEDORES =====
+
+  Future<List<Map<String, dynamic>>> getEmprendedores() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.getEmprendedoresUrl()),
+        headers: _getAuthHeaders(token),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          if (data['data'] is Map && data['data'].containsKey('data')) {
+            return List<Map<String, dynamic>>.from(data['data']['data']);
+          } else if (data['data'] is List) {
+            return List<Map<String, dynamic>>.from(data['data']);
+          }
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error al obtener emprendedores: $e');
+      return [];
+    }
+  }
+
+  // ===== CATEGORÍAS =====
+
+  Future<List<Map<String, dynamic>>> getCategorias() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('No hay token de autenticación');
+      }
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.getCategoriasUrl()),
+        headers: _getAuthHeaders(token),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          if (data['data'] is Map && data['data'].containsKey('data')) {
+            return List<Map<String, dynamic>>.from(data['data']['data']);
+          } else if (data['data'] is List) {
+            return List<Map<String, dynamic>>.from(data['data']);
+          }
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error al obtener categorías: $e');
+      return [];
+    }
+  }
 } 

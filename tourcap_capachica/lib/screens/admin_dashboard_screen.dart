@@ -15,12 +15,15 @@ import '../blocs/roles/roles_bloc.dart';
 import '../blocs/permissions/permissions_bloc.dart';
 import '../blocs/asociaciones/asociaciones_bloc.dart';
 import '../blocs/asociaciones/asociaciones_event.dart';
+import '../blocs/planes/planes_bloc.dart';
+import '../blocs/planes/planes_event.dart';
 import 'MenuDashboard/ReservasDashboard/reservas_dashboard_screen.dart';
 import 'MenuDashboard/Usuarios/users_management_screen.dart';
 import 'MenuDashboard/Usuarios/roles_management_screen.dart';
 import 'MenuDashboard/Usuarios/permissions_management_screen.dart';
 import 'MenuDashboard/AsociacionesDashboard/asociaciones_management_screen.dart';
 import 'MenuDashboard/ServiciosDashboard/servicios_management_screen.dart';
+import 'MenuDashboard/PlanesDashboard/planes_management_screen.dart';
 import '../blocs/servicios/servicios_bloc.dart';
 import '../blocs/servicios/servicios_event.dart';
 
@@ -77,7 +80,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ReservasDashboardScreen(),
     const _PlaceholderScreen(title: 'Mis Reservas'),
     const _PlaceholderScreen(title: 'Mis Inscripciones'),
-    const _PlaceholderScreen(title: 'Gestionar Planes'),
+    BlocProvider(
+      create: (_) => PlanesBloc()..add(LoadPlanes()),
+      child: const PlanesManagementScreen(),
+    ),
   ];
 
   @override

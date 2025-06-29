@@ -75,8 +75,9 @@ class ApiConfig {
   static String getEventosActivosUrl() => '$baseUrl${BackendRoutes.eventosActivos}';
   static String getEventosByEmprendedorUrl(int emprendedorId) => '$baseUrl${BackendRoutes.eventosByEmprendedor.replaceAll('{emprendedorId}', emprendedorId.toString())}';
 
-  // Endpoints de planes (rutas públicas)
+  // Endpoints de planes
   static String getPlanesUrl() => '$baseUrl${BackendRoutes.planes}';
+  static String getPlanByIdUrl(int id) => '$baseUrl${BackendRoutes.planes}/$id';
   static String getPlanesPublicosUrl() => '$baseUrl${BackendRoutes.planesPublicos}';
   static String getPlanesSearchUrl() => '$baseUrl${BackendRoutes.planesSearch}';
   static String getPlanesByEmprendedorUrl(int id) => '$baseUrl${BackendRoutes.planesByEmprendedor.replaceAll('{id}', id.toString())}';
