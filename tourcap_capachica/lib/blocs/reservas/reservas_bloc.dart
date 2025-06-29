@@ -12,7 +12,13 @@ class ReservasBloc extends Bloc<ReservasEvent, ReservasState> {
   final DashboardService _dashboardService;
   final UserService _userService;
 
-  // Variables para filtros
+  // Variables para filtrosE/flutter ( 2599): The preferred solution is to cancel the timer or stop listening to the animation in the dispose() callback. Another solution is to check the "mounted" property of this object before calling setState() to ensure the object is still in the tree.
+  // E/flutter ( 2599): This error might indicate a memory leak if setState() is being called because another object is retaining a reference to this State object after it has been removed from the tree. To avoid memory leaks, consider breaking the reference to this object during dispose().
+  // E/flutter ( 2599): #0      State.setState.<anonymous closure> (package:flutter/src/widgets/framework.dart:1171:9)
+  // E/flutter ( 2599): #1      State.setState (package:flutter/src/widgets/framework.dart:1206:6)
+  // E/flutter ( 2599): #2      _ReservasDashboardScreenState._fetchReservas (package:tourcap_capachica/screens/MenuDashboard/ReservasDashboard/reservas_dashboard_screen.dart:122:7)
+  // E/flutter ( 2599): <asynchronous suspension>
+  // E/flutter ( 2599):
   String? _codigoFilter;
   String? _estadoFilter;
   DateTime? _fechaInicioFilter;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/reservas/reservas_bloc.dart';
 import '../../../blocs/reservas/reservas_event.dart';
+//import '../../../blocs/reservas/reservas_state.dart';
 import '../../../services/dashboard_service.dart';
 import 'reserva_form_screen.dart';
 
@@ -87,6 +88,8 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
   }
 
   Future<void> _fetchReservas() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _error = null;
@@ -111,18 +114,22 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
         print('Servicios: ${primeraReserva['servicios'] ?? primeraReserva['reserva_servicios']}');
       }
       
-      setState(() {
-        _reservas = reservas;
-        _filteredReservas = reservas;
-        _isLoading = false;
-        _updateResumen();
-      });
+      if (mounted) {
+        setState(() {
+          _reservas = reservas;
+          _filteredReservas = reservas;
+          _isLoading = false;
+          _updateResumen();
+        });
+      }
     } catch (e) {
       print('Error al obtener reservas: $e');
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -452,9 +459,9 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Segunda fila: Fecha y Total
+                // Segunda fila: Fecha (sin total)
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
                       'Fecha: $fechaCreacion',
@@ -463,17 +470,8 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
                         fontSize: 14,
                       ),
                     ),
-                    Text(
-                      'Total: S/ ${total.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Color(0xFF9C27B0),
-                      ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
                 
                 // Tercera fila: Servicios
                 Text(
@@ -588,9 +586,41 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              context.read<ReservasBloc>().add(DeleteReserva(reservaId));
+              
+              // Mostrar indicador de carga
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Eliminando reserva...'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+              
+              try {
+                // Llamar al BLoC para eliminar
+                context.read<ReservasBloc>().add(DeleteReserva(reservaId));
+                
+                // Esperar un momento y recargar
+                await Future.delayed(const Duration(milliseconds: 500));
+                _fetchReservas();
+                
+                // Mostrar mensaje de éxito
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Reserva eliminada exitosamente'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                // Mostrar mensaje de error
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error al eliminar: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Eliminar'),

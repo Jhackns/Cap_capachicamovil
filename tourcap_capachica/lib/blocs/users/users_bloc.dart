@@ -6,11 +6,13 @@ import 'package:http_parser/http_parser.dart';
 import '../../config/api_config.dart';
 import '../../services/auth_service.dart';
 import '../../services/dashboard_service.dart';
+import '../../services/user_service.dart';
 import 'users_event.dart';
 import 'users_state.dart';
 
 class UsersBloc extends Bloc<UsersEvent, UsersState> {
   final DashboardService _dashboardService = DashboardService();
+  final UserService _userService = UserService();
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _filteredUsers = [];
 
@@ -101,62 +103,17 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   Future<void> _onUpdateUser(UpdateUser event, Emitter<UsersState> emit) async {
     emit(UsersLoading());
     try {
-      final authService = AuthService();
-      String? token = await authService.getToken();
-      if (token == null) {
-        emit(UsersError('Token no disponible'));
-        return;
-      }
-
-      final url = Uri.parse(ApiConfig.getUserByIdUrl(event.userId));
-      final request = http.MultipartRequest('POST', url);
-      request.fields['_method'] = 'PUT';
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      });
-
-      // Agregar campos del usuario
-      event.userData.forEach((key, value) {
-        if (value != null && value.toString().isNotEmpty) {
-          if (key == 'roles' && value is List) {
-            print('DEBUG: Enviando roles: $value'); // Debug log
-            for (int i = 0; i < value.length; i++) {
-              final role = value[i];
-              print('DEBUG: Agregando rol: $role'); // Debug log
-              request.fields['roles[$i]'] = role.toString();
-            }
-          } else if (key != 'profileImage') {
-            request.fields[key] = value.toString();
-          }
-        }
-      });
-
-      // Debug: imprimir todos los campos que se van a enviar
-      print('DEBUG: Campos a enviar: ${request.fields}');
-
-      // Agregar archivo si existe
-      if (event.userData['profileImage'] != null && event.userData['profileImage'] is File) {
-        final file = event.userData['profileImage'] as File;
-        final mimeType = lookupMimeType(file.path) ?? 'image/jpeg';
-        final multipartFile = await http.MultipartFile.fromPath(
-          'foto_perfil',
-          file.path,
-          contentType: MediaType.parse(mimeType),
-        );
-        request.files.add(multipartFile);
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        emit(UserOperationSuccess('Usuario actualizado exitosamente'));
-        add(LoadUsers());
-      } else {
-        emit(UserOperationError('Error: ${response.body}'));
-      }
+      print('🔄 === BLoC: ACTUALIZANDO USUARIO ===');
+      print('ID: ${event.userId}');
+      print('Datos: ${event.userData}');
+      
+      final result = await _userService.updateUser(event.userId, event.userData);
+      
+      print('✅ BLoC: Usuario actualizado exitosamente');
+      emit(UserOperationSuccess('Usuario actualizado exitosamente'));
+      add(LoadUsers());
     } catch (e) {
+      print('❌ BLoC: Error al actualizar usuario: $e');
       emit(UserOperationError(e.toString()));
     }
   }
@@ -164,28 +121,16 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   Future<void> _onDeleteUser(DeleteUser event, Emitter<UsersState> emit) async {
     emit(UsersLoading());
     try {
-      final authService = AuthService();
-      String? token = await authService.getToken();
-      if (token == null) {
-        emit(UsersError('Token no disponible'));
-        return;
-      }
-
-      final response = await http.delete(
-        Uri.parse(ApiConfig.getUserByIdUrl(event.userId)),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        emit(UserOperationSuccess('Usuario eliminado exitosamente'));
-        add(LoadUsers());
-      } else {
-        emit(UserOperationError('Error: ${response.body}'));
-      }
+      print('🗑️ === BLoC: ELIMINANDO USUARIO ===');
+      print('ID: ${event.userId}');
+      
+      await _userService.deleteUser(event.userId);
+      
+      print('✅ BLoC: Usuario eliminado exitosamente');
+      emit(UserOperationSuccess('Usuario eliminado exitosamente'));
+      add(LoadUsers());
     } catch (e) {
+      print('❌ BLoC: Error al eliminar usuario: $e');
       emit(UserOperationError(e.toString()));
     }
   }

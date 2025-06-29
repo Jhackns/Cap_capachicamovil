@@ -60,36 +60,28 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
     }
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _selectedUser = null;
+            _showUserForm = true;
+          });
+        },
+        backgroundColor: const Color(0xFF9C27B0),
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Gestión de Usuarios',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF9C27B0),
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _selectedUser = null;
-                      _showUserForm = true;
-                    });
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nuevo Usuario'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9C27B0),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
+            Text(
+              'Gestión de Usuarios',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF9C27B0),
+              ),
             ),
             const SizedBox(height: 16),
             // Filtros de búsqueda
@@ -308,6 +300,19 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
                                           ],
                                         ),
                                       ),
+                                      PopupMenuItem(
+                                        value: 'toggle_status',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              user['active'] == true ? Icons.block : Icons.check_circle,
+                                              color: user['active'] == true ? Colors.orange : Colors.green,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(user['active'] == true ? 'Desactivar' : 'Activar'),
+                                          ],
+                                        ),
+                                      ),
                                       const PopupMenuItem(
                                         value: 'delete',
                                         child: Row(
@@ -330,6 +335,14 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
                                         icon: const Icon(Icons.edit, color: Colors.blue),
                                         onPressed: () => _handleUserAction('edit', user),
                                         tooltip: 'Editar',
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          user['active'] == true ? Icons.block : Icons.check_circle,
+                                          color: user['active'] == true ? Colors.orange : Colors.green,
+                                        ),
+                                        onPressed: () => _handleUserAction('toggle_status', user),
+                                        tooltip: user['active'] == true ? 'Desactivar' : 'Activar',
                                       ),
                                       IconButton(
                                         icon: const Icon(Icons.delete, color: Colors.red),
@@ -451,6 +464,9 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
         break;
       case 'delete':
         _showDeleteDialog(user);
+        break;
+      case 'toggle_status':
+        _showActivateDialog(user);
         break;
       default:
         break;

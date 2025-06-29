@@ -92,12 +92,15 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
     setState(() => _isLoading = true);
     
     try {
+      print('🔄 === CARGANDO DATOS PARA FORMULARIO DE RESERVA ===');
+      
       // Cargar usuarios, servicios y emprendedores
       context.read<ReservasBloc>().add(LoadEmprendedores());
       context.read<ReservasBloc>().add(LoadServicios());
       context.read<ReservasBloc>().add(LoadUsuarios());
       
     } catch (e) {
+      print('❌ Error al cargar datos: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al cargar datos: $e'), backgroundColor: Colors.red),
       );
@@ -125,7 +128,15 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
   }
 
   double _calculateTotal() {
-    return _servicios.fold(0.0, (total, servicio) => total + (servicio.precio * servicio.cantidad));
+    double total = 0.0;
+    for (int i = 0; i < _servicios.length; i++) {
+      final servicio = _servicios[i];
+      final subtotal = servicio.precio * servicio.cantidad;
+      total += subtotal;
+      print('💰 Servicio $i: ${servicio.precio} x ${servicio.cantidad} = $subtotal');
+    }
+    print('💰 Total calculado: $total');
+    return total;
   }
 
   Future<void> _saveReserva() async {
@@ -185,9 +196,10 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
         backgroundColor: const Color(0xFF9C27B0),
         foregroundColor: Colors.white,
       ),
-      body: BlocConsumer<ReservasBloc, ReservasState>(
+      body: BlocConsumer<ReservasBloc, dynamic>(
         listener: (context, state) {
-          if (state is ReservaCreated || state is ReservaUpdated) {
+          // Verificar si es un estado de éxito
+          if (state.toString().contains('ReservaCreated') || state.toString().contains('ReservaUpdated')) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(widget.reserva != null ? 'Reserva actualizada exitosamente' : 'Reserva creada exitosamente'),
@@ -195,19 +207,48 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
               ),
             );
             Navigator.pop(context, true);
-          } else if (state is ReservasError) {
+          } 
+          // Verificar si es un estado de error
+          else if (state.toString().contains('ReservasError')) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+              SnackBar(content: Text('Error: ${state.toString()}'), backgroundColor: Colors.red),
             );
           }
         },
         builder: (context, state) {
           try {
             // Actualizar datos cuando se cargan
-            if (state is ReservasLoaded) {
-              _usuarios = state.usuarios ?? [];
-              _serviciosDisponibles = state.servicios ?? [];
-              _emprendedores = state.emprendedores ?? [];
+            if (state.toString().contains('ReservasLoaded')) {
+              // Intentar acceder a los datos del estado
+              try {
+                if (state is ReservasLoaded) {
+                  _usuarios = state.usuarios ?? [];
+                  _serviciosDisponibles = state.servicios ?? [];
+                  _emprendedores = state.emprendedores ?? [];
+                }
+              } catch (e) {
+                print('Error accediendo a datos del estado: $e');
+              }
+              
+              // Logging para debug
+              if (_serviciosDisponibles.isNotEmpty) {
+                print('📊 === ESTRUCTURA DE SERVICIOS ===');
+                final primerServicio = _serviciosDisponibles.first;
+                primerServicio.forEach((key, value) {
+                  print('$key: $value (${value.runtimeType})');
+                });
+                
+                if (primerServicio['emprendedor'] != null) {
+                  print('📊 === ESTRUCTURA DEL EMPRENDEDOR ===');
+                  final emprendedor = primerServicio['emprendedor'] as Map<String, dynamic>;
+                  emprendedor.forEach((key, value) {
+                    print('emprendedor.$key: $value (${value.runtimeType})');
+                  });
+                } else {
+                  print('❌ No se encontró la relación emprendedor en el servicio');
+                  print('❌ Campos disponibles: ${primerServicio.keys.toList()}');
+                }
+              }
               
               // Seleccionar cliente si estamos editando
               if (_clienteIdToSelect != null && _selectedCliente == null) {
@@ -582,8 +623,7 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
         const SizedBox(height: 16),
         
         // Emprendedor (solo lectura)
-        if (servicio.servicioId != null)
-          _buildEmprendedorField(servicio),
+        _buildEmprendedorField(servicio),
         
         const SizedBox(height: 16),
         
@@ -619,11 +659,14 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
           children: [
             Expanded(child: _buildDuracionField(servicio)),
             const SizedBox(width: 16),
-            Expanded(child: _buildCantidadField(index, servicio)),
-            const SizedBox(width: 16),
             Expanded(child: _buildPrecioField(index, servicio)),
           ],
         ),
+        
+        const SizedBox(height: 16),
+        
+        // Cantidad en su propia línea
+        _buildCantidadField(index, servicio),
         
         const SizedBox(height: 16),
         
@@ -664,20 +707,57 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
             );
           }).toList(),
           onChanged: (value) {
-            final selectedServicio = _serviciosDisponibles.firstWhere(
-              (s) => s['id'] == value,
-              orElse: () => {},
-            );
-            
-            final updatedServicio = servicio.copyWith(
-              servicioId: value,
-              emprendedorId: selectedServicio['emprendedor_id'],
-              precio: (selectedServicio['precio'] ?? 0.0).toDouble(),
-            );
-            _updateServicio(index, updatedServicio);
-            
-            // Forzar la actualización del widget para recalcular el total
-            setState(() {});
+            if (value != null) {
+              final selectedServicio = _serviciosDisponibles.firstWhere(
+                (s) => s['id'] == value,
+                orElse: () => {},
+              );
+              
+              if (selectedServicio.isNotEmpty) {
+                // Extraer datos del servicio seleccionado
+                final emprendedorId = selectedServicio['emprendedor_id'];
+                String emprendedorNombre = 'No disponible';
+                
+                // Intentar obtener el nombre del emprendedor de diferentes formas
+                if (selectedServicio['emprendedor'] != null) {
+                  if (selectedServicio['emprendedor'] is Map<String, dynamic>) {
+                    emprendedorNombre = selectedServicio['emprendedor']['nombre'] ?? 'No disponible';
+                  } else if (selectedServicio['emprendedor'] is String) {
+                    emprendedorNombre = selectedServicio['emprendedor'];
+                  }
+                }
+                
+                // Si no se encontró en la relación, buscar en la lista de emprendedores
+                if (emprendedorNombre == 'No disponible' && emprendedorId != null) {
+                  final emprendedor = _emprendedores.firstWhere(
+                    (e) => e['id'] == emprendedorId,
+                    orElse: () => {},
+                  );
+                  if (emprendedor.isNotEmpty) {
+                    emprendedorNombre = emprendedor['nombre'] ?? 'No disponible';
+                  }
+                }
+                
+                final precio = _parsePrecio(selectedServicio['precio_referencial']);
+                
+                print('🔍 Servicio seleccionado: ${selectedServicio['nombre']}');
+                print('🔍 Emprendedor ID: $emprendedorId');
+                print('🔍 Emprendedor Nombre: $emprendedorNombre');
+                print('🔍 Precio: $precio');
+                print('🔍 Estructura emprendedor: ${selectedServicio['emprendedor']}');
+                
+                final updatedServicio = servicio.copyWith(
+                  servicioId: value,
+                  emprendedorId: emprendedorId,
+                  emprendedorNombre: emprendedorNombre,
+                  precio: precio,
+                );
+                _updateServicio(index, updatedServicio);
+                
+                // Forzar la actualización del widget para recalcular el total
+                setState(() {});
+              }
+            }
           },
           validator: (value) {
             if (value == null) return 'Selecciona un servicio';
@@ -688,19 +768,43 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
     );
   }
 
-  Widget _buildEmprendedorField(ReservaServicioForm servicio) {
+  String _getEmprendedorNombre(int? emprendedorId) {
+    if (emprendedorId == null) return 'No disponible';
     final emprendedor = _emprendedores.firstWhere(
-      (e) => e['id'] == servicio.emprendedorId,
+      (e) => e['id'] == emprendedorId,
       orElse: () => {'nombre': 'No disponible'},
     );
-    
+    return emprendedor['nombre'] ?? 'No disponible';
+  }
+
+  double _parsePrecio(dynamic precio) {
+    if (precio == null) return 0.0;
+    if (precio is double) return precio;
+    if (precio is int) return precio.toDouble();
+    if (precio is String) {
+      try {
+        // Limpiar el string de caracteres no numéricos excepto punto y coma
+        final cleanString = precio.replaceAll(RegExp(r'[^\d.,]'), '');
+        // Reemplazar coma por punto si es necesario
+        final normalizedString = cleanString.replaceAll(',', '.');
+        return double.parse(normalizedString);
+      } catch (e) {
+        print('❌ Error parsing precio: $precio - $e');
+        return 0.0;
+      }
+    }
+    print('❌ Tipo de precio no reconocido: ${precio.runtimeType} - $precio');
+    return 0.0;
+  }
+
+  Widget _buildEmprendedorField(ReservaServicioForm servicio) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Emprendedor', style: TextStyle(fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: emprendedor['nombre'],
+          initialValue: servicio.emprendedorNombre ?? 'No disponible',
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             prefixIcon: Icon(Icons.business),
@@ -1045,8 +1149,35 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
   }
 
   Widget _buildDisponibilidadStatus(ReservaServicioForm servicio) {
-    // TODO: Implementar verificación de disponibilidad real
-    final isDisponible = true; // Placeholder
+    // Verificar disponibilidad basada en horarios
+    bool isDisponible = true;
+    String mensaje = 'Servicio disponible en la fecha y horario seleccionados';
+    
+    // Verificar que se haya seleccionado un servicio
+    if (servicio.servicioId == null) {
+      isDisponible = false;
+      mensaje = 'Selecciona un servicio para verificar disponibilidad';
+    }
+    // Verificar que se haya seleccionado fecha de inicio
+    else if (servicio.fechaInicio == null) {
+      isDisponible = false;
+      mensaje = 'Selecciona una fecha de inicio para verificar disponibilidad';
+    }
+    // Verificar que se hayan seleccionado horarios
+    else if (servicio.horaInicio == null || servicio.horaFin == null) {
+      isDisponible = false;
+      mensaje = 'Selecciona horarios de inicio y fin para verificar disponibilidad';
+    }
+    // Verificar que la hora de fin sea posterior a la hora de inicio
+    else if (servicio.horaInicio != null && servicio.horaFin != null) {
+      final inicio = servicio.horaInicio!;
+      final fin = servicio.horaFin!;
+      
+      if (fin.hour < inicio.hour || (fin.hour == inicio.hour && fin.minute <= inicio.minute)) {
+        isDisponible = false;
+        mensaje = 'La hora de fin debe ser posterior a la hora de inicio';
+      }
+    }
     
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1064,9 +1195,7 @@ class _ReservaFormScreenState extends State<ReservaFormScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              isDisponible 
-                  ? 'Servicio disponible en la fecha y horario seleccionados'
-                  : 'El servicio no está disponible en la fecha y horario seleccionados',
+              mensaje,
               style: TextStyle(
                 color: isDisponible ? Colors.green.shade700 : Colors.red.shade700,
                 fontWeight: FontWeight.w500,

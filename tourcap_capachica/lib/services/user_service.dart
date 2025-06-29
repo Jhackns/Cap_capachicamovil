@@ -150,8 +150,15 @@ class UserService {
         throw Exception('No hay token de autenticación');
       }
 
+      final url = '$_baseUrl${BackendRoutes.users}/$id';
+      print('🔄 === ACTUALIZANDO USUARIO ===');
+      print('URL: $url');
+      print('ID: $id');
+      print('Token: ${token.isNotEmpty ? "Presente" : "NULO"}');
+      print('Datos a enviar: $userData');
+
       final response = await http.put(
-        Uri.parse('$_baseUrl${BackendRoutes.users}/$id'),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -159,17 +166,25 @@ class UserService {
         body: json.encode(userData),
       );
 
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
+          print('✅ Usuario actualizado exitosamente');
           return Map<String, dynamic>.from(data['data']);
         } else {
+          print('❌ Error en respuesta: ${data['message']}');
           throw Exception(data['message'] ?? 'Error al actualizar usuario');
         }
       } else {
+        print('❌ Error HTTP: ${response.statusCode}');
+        print('❌ Response: ${response.body}');
         throw Exception('Error ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
+      print('❌ Excepción: $e');
       throw ErrorHandler.handleError(e);
     }
   }
@@ -181,19 +196,32 @@ class UserService {
         throw Exception('No hay token de autenticación');
       }
 
+      final url = '$_baseUrl${BackendRoutes.users}/$id';
+      print('🗑️ === ELIMINANDO USUARIO ===');
+      print('URL: $url');
+      print('ID: $id');
+      print('Token: ${token.isNotEmpty ? "Presente" : "NULO"}');
+
       final response = await http.delete(
-        Uri.parse('$_baseUrl${BackendRoutes.users}/$id'),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
 
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
       if (response.statusCode != 200) {
         final data = json.decode(response.body);
+        print('❌ Error al eliminar: ${data['message']}');
         throw Exception(data['message'] ?? 'Error al eliminar usuario');
       }
+      
+      print('✅ Usuario eliminado exitosamente');
     } catch (e) {
+      print('❌ Excepción al eliminar: $e');
       throw ErrorHandler.handleError(e);
     }
   }
