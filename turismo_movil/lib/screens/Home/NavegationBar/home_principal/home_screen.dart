@@ -512,29 +512,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                             point: _userLocation!,
                                             width: 40,
                                             height: 40,
-                                            child: Column(
-                                              children: [
-                                                Icon(
-                                                  Icons.person_pin_circle,
-                                                  size: 40,
-                                                  color: Colors.blue,
-                                                ),
-                                                Container(
-                                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue,
-                                                    borderRadius: BorderRadius.circular(8),
-                                                  ),
-                                                  child: Text(
-                                                    'Tú',
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
+                                            child: Icon(
+                                              Icons.person_pin_circle,
+                                              size: 40,
+                                              color: Colors.blue,
                                             ),
                                           ),
                                         // Marcadores de comunidades principales

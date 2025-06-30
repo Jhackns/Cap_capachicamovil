@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../models/servicio.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../providers/carrito_provider.dart';
@@ -518,8 +520,8 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
             // Bloque 4: Verificar disponibilidad
             _buildAvailabilityChecker(),
             
-            // Bloque 5: Mapa (placeholder)
-            _buildMapPlaceholder(),
+            // Bloque 5: Mapa
+            _buildServiceMap(),
             
             // Bloque 6: Información del emprendedor
             _buildEntrepreneurInfo(),
@@ -1239,7 +1241,44 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
     );
   }
 
-  Widget _buildMapPlaceholder() {
+  Widget _buildServiceMap() {
+    final lat = widget.servicio.latitud;
+    final lng = widget.servicio.longitud;
+    if (lat == null || lng == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Ubicación',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF6A1B9A),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: const Center(
+                child: Text(
+                  'Ubicación no disponible',
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final LatLng point = LatLng(lat, lng);
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1262,18 +1301,35 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade300),
             ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: point,
+                  initialZoom: 15,
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.all,
+                  ),
+                ),
                 children: [
-                  Icon(Icons.map, size: 48, color: Colors.grey),
-                  SizedBox(height: 8),
-                  Text(
-                    'Mapa en desarrollo',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 16,
-                    ),
+                  TileLayer(
+                    urlTemplate:
+                        'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JpbWFsZG9hcnJlZG9uZG8iLCJhIjoiY21hYmJvMGpoMmF6YjJrb29tNnJ0MXQ1dyJ9.Em9vVlsuF3-ddqRnxTMYAw',
+                    userAgentPackageName: 'com.example.turismo_capachica',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: point,
+                        width: 40,
+                        height: 40,
+                        child: Icon(
+                          Icons.location_pin,
+                          size: 40,
+                          color: Color(0xFF9C27B0),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
