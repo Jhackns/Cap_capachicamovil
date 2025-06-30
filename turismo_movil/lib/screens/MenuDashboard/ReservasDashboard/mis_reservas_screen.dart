@@ -5,6 +5,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../services/reservas_service.dart';
 import '../../../models/reserva.dart';
 import '../../../models/reserva_servicio.dart';
+import 'pago_confirmacion_screen.dart';
 
 class MisReservasScreen extends StatefulWidget {
   const MisReservasScreen({Key? key}) : super(key: key);
@@ -929,11 +930,12 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () {
-                  // TODO: Implementar confirmar y pagar
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Funcionalidad en desarrollo'),
-                      backgroundColor: Colors.orange,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PagoConfirmacionScreen(
+                        reserva: reserva,
+                      ),
                     ),
                   );
                 },
