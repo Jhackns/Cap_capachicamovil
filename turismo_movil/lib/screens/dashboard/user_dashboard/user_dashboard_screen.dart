@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../models/user.dart';
+import '../../MenuDashboard/ReservasDashboard/mis_reservas_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({Key? key}) : super(key: key);
@@ -598,35 +599,7 @@ class _MisReservasScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.list_alt,
-            size: 64,
-            color: Color(0xFF9C27B0),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Mis Reservas',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF9C27B0),
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Funcionalidad próximamente disponible',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const MisReservasScreen();
   }
 }
 

@@ -4,6 +4,7 @@ import '../../../blocs/reservas/reservas_bloc.dart';
 import '../../../blocs/reservas/reservas_event.dart';
 import '../../../services/dashboard_service.dart';
 import 'reserva_form_screen.dart';
+import 'mis_reservas_screen.dart';
 
 class ReservasDashboardScreen extends StatefulWidget {
   @override
@@ -236,6 +237,18 @@ class _ReservasDashboardScreenState extends State<ReservasDashboardScreen> {
       spacing: 12,
       runSpacing: 8,
       children: [
+        OutlinedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MisReservasScreen(),
+              ),
+            );
+          },
+          icon: Icon(Icons.person, color: Color(0xFF9C27B0)),
+          label: Text('Mis Reservas'),
+        ),
         OutlinedButton.icon(
           onPressed: () {
             showDialog(

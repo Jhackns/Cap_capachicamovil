@@ -18,6 +18,7 @@ import '../../../blocs/asociaciones/asociaciones_event.dart';
 import '../../../blocs/planes/planes_bloc.dart';
 import '../../../blocs/planes/planes_event.dart';
 import '../../MenuDashboard/ReservasDashboard/reservas_dashboard_screen.dart';
+import '../../MenuDashboard/ReservasDashboard/mis_reservas_screen.dart';
 import '../../MenuDashboard/Usuarios/users_management_screen.dart';
 import '../../MenuDashboard/Usuarios/roles_management_screen.dart';
 import '../../MenuDashboard/Usuarios/permissions_management_screen.dart';
@@ -26,6 +27,7 @@ import '../../MenuDashboard/ServiciosDashboard/servicios_management_screen.dart'
 import '../../MenuDashboard/PlanesDashboard/planes_management_screen.dart';
 import '../../../blocs/servicios/servicios_bloc.dart';
 import '../../../blocs/servicios/servicios_event.dart';
+import '../user_dashboard/user_dashboard_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -78,7 +80,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ),
     const _PlaceholderScreen(title: 'Gestión de Categorías'),
     ReservasDashboardScreen(),
-    const _PlaceholderScreen(title: 'Mis Reservas'),
+    const MisReservasScreen(),
     const _PlaceholderScreen(title: 'Mis Inscripciones'),
     BlocProvider(
       create: (_) => PlanesBloc()..add(LoadPlanes()),

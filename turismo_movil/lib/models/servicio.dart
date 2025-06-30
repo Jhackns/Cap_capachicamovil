@@ -66,21 +66,15 @@ class Servicio {
       id: json['id'],
       nombre: json['nombre'] ?? '',
       descripcion: json['descripcion'] ?? '',
-      precio: (json['precio_referencial'] is String)
-          ? double.tryParse(json['precio_referencial']) ?? 0.0
-          : (json['precio_referencial'] ?? 0.0).toDouble(),
+      precio: _parseDouble(json['precio_referencial']),
       emprendedor: emprendedorData?['nombre'] ?? json['emprendedor_nombre'] ?? '',
       emprendedorId: emprendedorData?['id'] ?? json['emprendedor_id'],
       categorias: (json['categorias'] as List?)?.map((c) => c['nombre']?.toString() ?? '').where((e) => e.isNotEmpty).toList() ?? [],
       categoriaIds: (json['categorias'] as List?)?.map((c) => c['id'] as int).toList() ?? [],
       estado: json['estado'] == true || json['estado'] == 1,
       capacidad: json['capacidad'] ?? 1,
-      latitud: (json['latitud'] is String)
-          ? double.tryParse(json['latitud'])
-          : (json['latitud'] != null) ? json['latitud'].toDouble() : null,
-      longitud: (json['longitud'] is String)
-          ? double.tryParse(json['longitud'])
-          : (json['longitud'] != null) ? json['longitud'].toDouble() : null,
+      latitud: _parseDouble(json['latitud']),
+      longitud: _parseDouble(json['longitud']),
       ubicacionReferencia: json['ubicacion_referencia'],
       horarios: (json['horarios'] as List?)?.map((h) => Map<String, dynamic>.from(h)).toList() ?? [],
       sliders: (json['sliders'] as List?)?.map((s) => Map<String, dynamic>.from(s)).toList() ?? [],
@@ -184,5 +178,15 @@ class Servicio {
     }
     
     return horariosCompletos;
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+    return 0.0;
   }
 } 

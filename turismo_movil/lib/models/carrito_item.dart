@@ -116,7 +116,7 @@ class CarritoItem {
       fecha: DateTime.parse(map['fecha']),
       horaInicio: map['horaInicio'],
       horaFin: map['horaFin'],
-      precio: map['precio'].toDouble(),
+      precio: _parseDouble(map['precio']),
       cantidad: map['cantidad'],
     );
   }
@@ -131,11 +131,20 @@ class CarritoItem {
       fecha: DateTime.parse(json['fecha_inicio']),
       horaInicio: json['hora_inicio'],
       horaFin: json['hora_fin'],
-      precio: (json['precio'] is String) 
-          ? double.tryParse(json['precio']) ?? 0.0 
-          : (json['precio'] ?? 0.0).toDouble(),
+      precio: _parseDouble(json['precio']),
       cantidad: json['cantidad'] ?? 1,
     );
+  }
+
+  // Helper method to safely parse double values
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+    return 0.0;
   }
 
   @override
