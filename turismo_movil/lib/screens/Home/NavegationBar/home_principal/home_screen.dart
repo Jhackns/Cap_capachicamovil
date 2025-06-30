@@ -2,12 +2,68 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:location/location.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../widgets/theme_switcher.dart';
 // Importaciones de widgets
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final MapController _mapController = MapController();
+  LatLng? _userLocation;
+  final LatLng _capachicaLatLng = const LatLng(-15.6927, -69.8194);
+
+  @override
+  void initState() {
+    super.initState();
+    _obtenerUbicacionUsuario();
+  }
+
+  Future<void> _obtenerUbicacionUsuario() async {
+    final location = Location();
+
+    bool serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) return;
+    }
+
+    PermissionStatus permissionGranted = await location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return;
+    }
+
+    try {
+      final userLocation = await location.getLocation();
+      if (mounted) {
+        setState(() {
+          _userLocation = LatLng(userLocation.latitude!, userLocation.longitude!);
+        });
+      }
+    } catch (e) {
+      // Si no se puede obtener la ubicación, usar la ubicación de Capachica
+      if (mounted) {
+        setState(() {
+          _userLocation = _capachicaLatLng;
+        });
+      }
+    }
+  }
+
+  void _centrarEnUbicacion() {
+    if (_userLocation != null) {
+      _mapController.move(_userLocation!, 15.0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -413,34 +469,174 @@ class HomeScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Container(
-                          height: 200,
+                          height: 300,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             color: Colors.grey[200],
                           ),
-                          child: const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Stack(
                               children: [
-                                Icon(
-                                  Icons.map,
-                                  size: 64,
-                                  color: Color(0xFF9C27B0),
+                                FlutterMap(
+                                  mapController: _mapController,
+                                  options: MapOptions(
+                                    initialCenter: _capachicaLatLng,
+                                    initialZoom: 12,
+                                    interactionOptions: const InteractionOptions(
+                                      flags: InteractiveFlag.all,
+                                    ),
+                                  ),
+                                  children: [
+                                    TileLayer(
+                                      urlTemplate:
+                                      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JpbWFsZG9hcnJlZG9uZG8iLCJhIjoiY21hYmJvMGpoMmF6YjJrb29tNnJ0MXQ1dyJ9.Em9vVlsuF3-ddqRnxTMYAw',
+                                      userAgentPackageName: 'com.example.turismo_capachica',
+                                    ),
+                                    MarkerLayer(
+                                      markers: [
+                                        // Marcador de Capachica
+                                        Marker(
+                                          point: const LatLng(-15.6927, -69.8194),
+                                          width: 40,
+                                          height: 40,
+                                          child: Icon(
+                                            Icons.location_pin,
+                                            size: 40,
+                                            color: Color(0xFF9C27B0),
+                                          ),
+                                        ),
+                                        // Marcador de ubicación del usuario
+                                        if (_userLocation != null)
+                                          Marker(
+                                            point: _userLocation!,
+                                            width: 40,
+                                            height: 40,
+                                            child: Column(
+                                              children: [
+                                                Icon(
+                                                  Icons.person_pin_circle,
+                                                  size: 40,
+                                                  color: Colors.blue,
+                                                ),
+                                                Container(
+                                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.blue,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    'Tú',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        // Marcadores de comunidades principales
+                                        Marker(
+                                          point: const LatLng(-15.6850, -69.8250),
+                                          width: 30,
+                                          height: 30,
+                                          child: Icon(
+                                            Icons.home,
+                                            size: 30,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                        Marker(
+                                          point: const LatLng(-15.7000, -69.8100),
+                                          width: 30,
+                                          height: 30,
+                                          child: Icon(
+                                            Icons.home,
+                                            size: 30,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                        Marker(
+                                          point: const LatLng(-15.6800, -69.8300),
+                                          width: 30,
+                                          height: 30,
+                                          child: Icon(
+                                            Icons.home,
+                                            size: 30,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Mapa en desarrollo',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF6A1B9A),
+                                // Botón para centrar en ubicación
+                                Positioned(
+                                  bottom: 16,
+                                  right: 16,
+                                  child: FloatingActionButton(
+                                    onPressed: _centrarEnUbicacion,
+                                    backgroundColor: const Color(0xFF9C27B0),
+                                    foregroundColor: Colors.white,
+                                    mini: true,
+                                    child: const Icon(Icons.my_location),
                                   ),
                                 ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Próximamente: Mapa en tiempo real',
-                                  style: TextStyle(
-                                    color: Colors.grey,
+                                // Leyenda del mapa
+                                Positioned(
+                                  top: 16,
+                                  left: 16,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Leyenda',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.location_pin, size: 16, color: Color(0xFF9C27B0)),
+                                            const SizedBox(width: 4),
+                                            const Text('Capachica', style: TextStyle(fontSize: 10)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.person_pin_circle, size: 16, color: Colors.blue),
+                                            const SizedBox(width: 4),
+                                            const Text('Tu ubicación', style: TextStyle(fontSize: 10)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.home, size: 16, color: Colors.green),
+                                            const SizedBox(width: 4),
+                                            const Text('Comunidades', style: TextStyle(fontSize: 10)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
