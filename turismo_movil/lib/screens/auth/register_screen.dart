@@ -23,7 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _addressController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   DateTime? _selectedDate;
   String? _selectedGender;
   String? _selectedLanguage;
@@ -39,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // Mapeo para mostrar géneros en español
   final Map<String, String> _genderLabels = {
     'male': 'Masculino',
-    'female': 'Femenino', 
+    'female': 'Femenino',
     'other': 'Otro',
     'prefer_not_to_say': 'Prefiero no decir',
   };
@@ -64,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       maxHeight: 1024,
       imageQuality: 80,
     );
-    
+
     if (image != null) {
       setState(() {
         _profileImage = File(image.path);
@@ -79,8 +79,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       locale: const Locale('es', 'ES'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFFF5A5F),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
-    
+
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
@@ -88,419 +101,703 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Widget _buildAirbnbTextField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    IconData? prefixIcon,
+    String? Function(String?)? validator,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF222222),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFDDDDDD),
+                width: 1,
+              ),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextFormField(
+              controller: controller,
+              keyboardType: keyboardType,
+              obscureText: obscureText,
+              validator: validator,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFF222222),
+              ),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 16,
+                ),
+                prefixIcon: prefixIcon != null
+                    ? Icon(prefixIcon, color: const Color(0xFF717171), size: 20)
+                    : null,
+                suffixIcon: suffixIcon,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAirbnbDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+    required String? Function(String?)? validator,
+    IconData? prefixIcon,
+    Map<String, String>? itemLabels,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF222222),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFDDDDDD),
+                width: 1,
+              ),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: DropdownButtonFormField<String>(
+              value: value,
+              validator: validator,
+              decoration: InputDecoration(
+                prefixIcon: prefixIcon != null
+                    ? Icon(prefixIcon, color: const Color(0xFF717171), size: 20)
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+              hint: Text(
+                'Seleccionar',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 16,
+                ),
+              ),
+              items: items.map((String item) {
+                return DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(
+                    itemLabels?[item] ?? item,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF222222),
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: onChanged,
+              icon: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Color(0xFF717171),
+              ),
+              dropdownColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Crear Cuenta'),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
+          // Aquí puedes agregar tu imagen de fondo
+          image: DecorationImage(
+            image: AssetImage('assets/images/fondo.jpg'),
+            fit: BoxFit.cover,
+          ),
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
+              Color(0xFFF7F7F7),
+              Color(0xFFFFFFFF),
             ],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: _formKey,
+            child: Column(
+              children: [
+                // Header con logo/título estilo Airbnb
+                Container(
+                  padding: const EdgeInsets.all(24),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header
-                      Text(
-                        'Crea tu cuenta',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      // Logo placeholder - aquí puedes agregar tu logo
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF5A5F),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF5A5F).withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.home_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Únete a nosotros',
+                        style: TextStyle(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF9C27B0),
+                          color: Color(0xFF222222),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Crea tu cuenta y comienza tu experiencia',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 24),
-                      
-                      // Nombre completo
-                      CustomTextField(
-                        label: 'Nombre completo',
-                        hint: 'Tu nombre completo',
-                        controller: _nameController,
-                        prefixIcon: const Icon(Icons.person),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingresa tu nombre completo';
-                          }
-                          if (value.length < 2) {
-                            return 'El nombre debe tener al menos 2 caracteres';
-                          }
-                          return null;
-                        },
+                    ],
+                  ),
+                ),
+
+                // Formulario principal
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
-                      const SizedBox(height: 16),
-                      
-                      // Correo electrónico
-                      CustomTextField(
-                        label: 'Correo electrónico',
-                        hint: 'ejemplo@correo.com',
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        prefixIcon: const Icon(Icons.email),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingresa tu correo electrónico';
-                          }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                            return 'Ingresa un correo electrónico válido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Teléfono
-                      CustomTextField(
-                        label: 'Teléfono',
-                        hint: '987654321',
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        prefixIcon: const Icon(Icons.phone),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingresa tu teléfono';
-                          }
-                          if (value.length < 7) {
-                            return 'El teléfono debe tener al menos 7 dígitos';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // País
-                      CustomTextField(
-                        label: 'País',
-                        hint: 'Tu país',
-                        controller: _countryController,
-                        prefixIcon: const Icon(Icons.public),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingresa tu país';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Fecha de nacimiento
-                      InkWell(
-                        onTap: _selectDate,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[400]!),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Foto de perfil
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.calendar_today, color: Color(0xFF9C27B0)),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  _selectedDate != null
-                                      ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
-                                      : 'dd/mm/aaaa',
-                                  style: TextStyle(
-                                    color: _selectedDate != null ? Colors.black : Colors.grey[600],
+                              const Text(
+                                'Foto de perfil (Opcional)',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF222222),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Center(
+                                child: GestureDetector(
+                                  onTap: _pickImage,
+                                  child: Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(60),
+                                      border: Border.all(
+                                        color: const Color(0xFFDDDDDD),
+                                        width: 2,
+                                      ),
+                                      color: Colors.white,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: _profileImage != null
+                                        ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(58),
+                                      child: Image.file(
+                                        _profileImage!,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                        : Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.add_a_photo,
+                                          size: 30,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Agregar\nfoto',
+                                          style: TextStyle(
+                                            color: Colors.grey[500],
+                                            fontSize: 12,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      if (_selectedDate == null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, left: 16),
-                          child: Text(
-                            'Por favor selecciona tu fecha de nacimiento',
-                            style: TextStyle(
-                              color: Colors.red[600],
-                              fontSize: 12,
-                            ),
-                          ),
+
+                        // Campos del formulario
+                        _buildAirbnbTextField(
+                          label: 'Nombre completo',
+                          hint: 'Tu nombre completo',
+                          controller: _nameController,
+                          prefixIcon: Icons.person_outline,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingresa tu nombre completo';
+                            }
+                            if (value.length < 2) {
+                              return 'El nombre debe tener al menos 2 caracteres';
+                            }
+                            return null;
+                          },
                         ),
-                      const SizedBox(height: 16),
-                      
-                      // Dirección
-                      CustomTextField(
-                        label: 'Dirección',
-                        hint: 'Tu dirección',
-                        controller: _addressController,
-                        prefixIcon: const Icon(Icons.location_on),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingresa tu dirección';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Género
-                      DropdownButtonFormField<String>(
-                        value: _selectedGender,
-                        decoration: const InputDecoration(
-                          labelText: 'Género',
-                          prefixIcon: Icon(Icons.person_outline),
-                          border: OutlineInputBorder(),
+
+                        _buildAirbnbTextField(
+                          label: 'Correo electrónico',
+                          hint: 'ejemplo@correo.com',
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          prefixIcon: Icons.email_outlined,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingresa tu correo electrónico';
+                            }
+                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                              return 'Ingresa un correo electrónico válido';
+                            }
+                            return null;
+                          },
                         ),
-                        hint: const Text('Seleccionar'),
-                        items: _genders.map((String gender) {
-                          return DropdownMenuItem<String>(
-                            value: gender,
-                            child: Text(_genderLabels[gender]!),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedGender = newValue;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor selecciona tu género';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Idioma preferido
-                      DropdownButtonFormField<String>(
-                        value: _selectedLanguage,
-                        decoration: const InputDecoration(
-                          labelText: 'Idioma preferido',
-                          prefixIcon: Icon(Icons.language),
-                          border: OutlineInputBorder(),
+
+                        _buildAirbnbTextField(
+                          label: 'Teléfono',
+                          hint: '987654321',
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          prefixIcon: Icons.phone_outlined,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingresa tu teléfono';
+                            }
+                            if (value.length < 7) {
+                              return 'El teléfono debe tener al menos 7 dígitos';
+                            }
+                            return null;
+                          },
                         ),
-                        hint: const Text('Seleccionar'),
-                        items: _languages.map((String language) {
-                          return DropdownMenuItem<String>(
-                            value: language,
-                            child: Text(language),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedLanguage = newValue;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor selecciona tu idioma preferido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Foto de perfil
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Foto de perfil (Opcional)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: _pickImage,
-                            child: Container(
-                              height: 120,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[400]!),
-                                borderRadius: BorderRadius.circular(8),
+
+                        _buildAirbnbTextField(
+                          label: 'País',
+                          hint: 'Tu país',
+                          controller: _countryController,
+                          prefixIcon: Icons.public_outlined,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingresa tu país';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        // Fecha de nacimiento
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Fecha de nacimiento',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF222222),
+                                ),
                               ),
-                              child: _profileImage != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(
-                                        _profileImage!,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: _selectDate,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFDDDDDD),
+                                      width: 1,
+                                    ),
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
                                       ),
-                                    )
-                                  : Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.add_photo_alternate,
-                                          size: 48,
-                                          color: Colors.grey[400],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Ningún archivo seleccionado',
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.calendar_today_outlined,
+                                        color: Color(0xFF717171),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _selectedDate != null
+                                              ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
+                                              : 'dd/mm/aaaa',
                                           style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 14,
+                                            color: _selectedDate != null
+                                                ? const Color(0xFF222222)
+                                                : Colors.grey[500],
+                                            fontSize: 16,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Contraseña
-                      CustomTextField(
-                        label: 'Contraseña',
-                        hint: '••••••••',
-                        controller: _passwordController,
-                        obscureText: !_isPasswordVisible,
-                        prefixIcon: const Icon(Icons.lock),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingresa tu contraseña';
-                          }
-                          if (value.length < 6) {
-                            return 'La contraseña debe tener al menos 6 caracteres';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Confirmar contraseña
-                      CustomTextField(
-                        label: 'Confirmar contraseña',
-                        hint: '••••••••',
-                        controller: _confirmPasswordController,
-                        obscureText: !_isConfirmPasswordVisible,
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-                            });
-                          },
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor confirma tu contraseña';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Las contraseñas no coinciden';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Error message
-                      if (_error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(
-                            _error!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      
-                      // Registrarse button
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _register,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: const Color(0xFF9C27B0),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              )
-                            : const Text('Registrarse'),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Google Sign In Button
-                      OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _signInWithGoogle,
-                        icon: const Icon(Icons.g_mobiledata, size: 24),
-                        label: const Text('Registrarse con Google'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          side: const BorderSide(color: Colors.grey),
+                              ),
+                              if (_selectedDate == null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8, left: 4),
+                                  child: Text(
+                                    'Por favor selecciona tu fecha de nacimiento',
+                                    style: TextStyle(
+                                      color: Colors.red[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Divider
-                      Row(
-                        children: [
-                          Expanded(child: Divider(color: Colors.grey[400])),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+
+                        _buildAirbnbTextField(
+                          label: 'Dirección',
+                          hint: 'Tu dirección',
+                          controller: _addressController,
+                          prefixIcon: Icons.location_on_outlined,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingresa tu dirección';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        _buildAirbnbDropdown(
+                          label: 'Género',
+                          value: _selectedGender,
+                          items: _genders,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedGender = newValue;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor selecciona tu género';
+                            }
+                            return null;
+                          },
+                          prefixIcon: Icons.person_outline,
+                          itemLabels: _genderLabels,
+                        ),
+
+                        _buildAirbnbDropdown(
+                          label: 'Idioma preferido',
+                          value: _selectedLanguage,
+                          items: _languages,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedLanguage = newValue;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor selecciona tu idioma preferido';
+                            }
+                            return null;
+                          },
+                          prefixIcon: Icons.language_outlined,
+                        ),
+
+                        _buildAirbnbTextField(
+                          label: 'Contraseña',
+                          hint: '••••••••',
+                          controller: _passwordController,
+                          obscureText: !_isPasswordVisible,
+                          prefixIcon: Icons.lock_outline,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFF717171),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingresa tu contraseña';
+                            }
+                            if (value.length < 6) {
+                              return 'La contraseña debe tener al menos 6 caracteres';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        _buildAirbnbTextField(
+                          label: 'Confirmar contraseña',
+                          hint: '••••••••',
+                          controller: _confirmPasswordController,
+                          obscureText: !_isConfirmPasswordVisible,
+                          prefixIcon: Icons.lock_outline,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFF717171),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                              });
+                            },
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor confirma tu contraseña';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Las contraseñas no coinciden';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        // Error message
+                        if (_error != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
                             child: Text(
-                              'o',
-                              style: TextStyle(color: Colors.grey[600]),
+                              _error!,
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                          Expanded(child: Divider(color: Colors.grey[400])),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Login link
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushReplacementNamed('/login');
-                        },
-                        child: const Text('¿Ya tienes una cuenta? Inicia sesión'),
-                      ),
-                    ],
+
+                        // Botón de registro principal
+                        Container(
+                          height: 56,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _register,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF5A5F),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                                : const Text('Crear cuenta'),
+                          ),
+                        ),
+
+                        // Divider
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 20),
+                          child: Row(
+                            children: [
+                              Expanded(child: Divider(color: Colors.grey[300])),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'o',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(color: Colors.grey[300])),
+                            ],
+                          ),
+                        ),
+
+                        // Botón de Google
+                        Container(
+                          height: 56,
+                          margin: const EdgeInsets.only(bottom: 24),
+                          child: OutlinedButton.icon(
+                            onPressed: _isLoading ? null : _signInWithGoogle,
+                            icon: Container(
+                              padding: const EdgeInsets.all(2),
+                              child: Image.asset(
+                                'assets/images/images.jpg', // Asegúrate de tener este asset
+                                height: 18,
+                                width: 18,
+                                errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.g_mobiledata, size: 24),
+                              ),
+                            ),
+                            label: const Text('Continuar con Google'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF222222),
+                              side: const BorderSide(color: Color(0xFFDDDDDD)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Link para login
+                        Center(
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pushReplacementNamed('/login');
+                            },
+                            child: RichText(
+                              text: const TextSpan(
+                                text: '¿Ya tienes cuenta? ',
+                                style: TextStyle(
+                                  color: Color(0xFF717171),
+                                  fontSize: 16,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: 'Inicia sesión',
+                                    style: TextStyle(
+                                      color: Color(0xFFFF5A5F),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 40),
+              ],
             ),
           ),
         ),
@@ -516,7 +813,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       try {
-        // TODO: Implementar registro con todos los campos
         final success = await context.read<AuthProvider>().register(
           name: _nameController.text,
           email: _emailController.text,
@@ -529,9 +825,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           language: _selectedLanguage!,
           profileImage: _profileImage,
         );
-        
+
         if (mounted && success) {
-          // Redirigir al dashboard de usuario
           Navigator.of(context).pushReplacementNamed('/dashboard');
         }
       } catch (e) {
@@ -557,7 +852,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      // TODO: Implementar autenticación con Google
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Autenticación con Google próximamente disponible'),
@@ -579,4 +873,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 }
- 

@@ -9,7 +9,6 @@ import '../../utils/error_handler.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? message;
-  
   const LoginScreen({Key? key, this.message}) : super(key: key);
 
   @override
@@ -40,247 +39,487 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Iniciar Sesión'),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
-            ],
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.arrow_back,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          onPressed: () => Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/main',
+                (route) => false,
           ),
         ),
-        child: SafeArea(
-          child: Center(
+      ),
+      body: Stack(
+        children: [
+          // Background Image
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                // Cambia 'assets/images/login_background.jpg' por tu imagen
+                image: AssetImage('assets/images/fondo.jpg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          // Gradient Overlay
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.7),
+                ],
+              ),
+            ),
+          ),
+
+          // Content
+          SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Message display (if any)
-                        if (widget.message != null) ...[  
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            margin: const EdgeInsets.only(bottom: 20),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.errorContainer,
-                              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 60),
+
+                    // App Logo/Title
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.travel_explore,
+                            size: 48,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Bienvenido',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: Theme.of(context).colorScheme.error,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // Message display (if any)
+                    if (widget.message != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                widget.message!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Login Form Card
+                    Container(
+                      padding: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Header
+                            Text(
+                              _isLogin ? 'Iniciar Sesión' : 'Crear Cuenta',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF222222),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _isLogin
+                                  ? 'Ingresa a tu cuenta para continuar'
+                                  : 'Crea una nueva cuenta',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 32),
+
+                            // Username field (only for register)
+                            if (!_isLogin) ...[
+                              _buildTextField(
+                                label: 'Nombre de usuario',
+                                hint: 'Tu nombre de usuario',
+                                controller: _usernameController,
+                                prefixIcon: Icons.person,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Nombre de usuario requerido';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+
+                            // Email field
+                            _buildTextField(
+                              label: 'Correo electrónico',
+                              hint: 'tu@email.com',
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              prefixIcon: Icons.email_outlined,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Correo electrónico requerido';
+                                }
+                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                  return 'Formato de correo inválido';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Password field
+                            _buildTextField(
+                              label: 'Contraseña',
+                              hint: 'Tu contraseña',
+                              controller: _passwordController,
+                              obscureText: !_isPasswordVisible,
+                              prefixIcon: Icons.lock_outline,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isPasswordVisible
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: Colors.grey[600],
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isPasswordVisible = !_isPasswordVisible;
+                                  });
+                                },
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Contraseña requerida';
+                                }
+                                if (!_isLogin && value.length < 6) {
+                                  return 'Mínimo 6 caracteres';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Error message
+                            if (_error != null) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.red[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.red[200]!),
+                                ),
+                                child: Text(
+                                  _error!,
+                                  style: TextStyle(
+                                    color: Colors.red[700],
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+
+                            // Submit button
+                            ElevatedButton(
+                              onPressed: _isLoading ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF5A5F),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                                  : Text(
+                                _isLogin ? 'Continuar' : 'Crear cuenta',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Divider
+                            Row(
+                              children: [
+                                Expanded(child: Divider(color: Colors.grey[300])),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: Text(
-                                    widget.message!,
+                                    'o',
                                     style: TextStyle(
-                                      color: Theme.of(context).colorScheme.error,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(child: Divider(color: Colors.grey[300])),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Google Sign In Button
+                            OutlinedButton.icon(
+                              onPressed: _isLoading ? null : _signInWithGoogle,
+                              icon: Container(
+                                padding: const EdgeInsets.all(2),
+                                child: Image.asset(
+                                  'assets/images/images.jpg', // Asegúrate de tener este asset
+                                  height: 18,
+                                  width: 18,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.g_mobiledata, size: 24),
+                                ),
+                              ),
+                              label: Text(
+                                _isLogin ? 'Continuar con Google' : 'Registrarse con Google',
+                                style: const TextStyle(
+                                  color: Color(0xFF222222),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                side: BorderSide(color: Colors.grey[300]!),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Toggle between login and register
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    if (_isLogin) {
+                                      Navigator.of(context).pushReplacementNamed('/register');
+                                    } else {
+                                      setState(() {
+                                        _isLogin = true;
+                                        _error = null;
+                                      });
+                                    }
+                                  },
+                                  child: Text(
+                                    _isLogin ? 'Regístrate' : 'Inicia sesión',
+                                    style: const TextStyle(
+                                      color: Color(0xFFFF5A5F),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                        
-                        // Header
-                        Text(
-                          _isLogin ? 'Iniciar Sesión' : 'Crear Cuenta',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Username field (only for register)
-                        if (!_isLogin)
-                          CustomTextField(
-                            label: 'Nombre de usuario',
-                            hint: 'Ingresa tu nombre de usuario',
-                            controller: _usernameController,
-                            prefixIcon: const Icon(Icons.person),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Por favor ingresa un nombre de usuario';
-                              }
-                              return null;
-                            },
-                          ),
-                        
-                        // Email field
-                        CustomTextField(
-                          label: 'Correo electrónico',
-                          hint: 'Ingresa tu correo electrónico',
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          prefixIcon: const Icon(Icons.email),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingresa tu correo electrónico';
-                            }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return 'Ingresa un correo electrónico válido';
-                            }
-                            return null;
-                          },
-                        ),
-                        
-                        // Password field
-                        CustomTextField(
-                          label: 'Contraseña',
-                          hint: 'Ingresa tu contraseña',
-                          controller: _passwordController,
-                          obscureText: !_isPasswordVisible,
-                          prefixIcon: const Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isPasswordVisible
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              });
-                            },
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingresa tu contraseña';
-                            }
-                            if (!_isLogin && value.length < 6) {
-                              return 'La contraseña debe tener al menos 6 caracteres';
-                            }
-                            return null;
-                          },
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Error message
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Text(
-                              _error!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                                fontSize: 14,
+
+                            const SizedBox(height: 16),
+
+                            // Diagnostics button (more subtle)
+                            TextButton.icon(
+                              onPressed: _isLoading ? null : _runDiagnostics,
+                              icon: const Icon(
+                                Icons.wifi_find,
+                                size: 16,
+                                color: Colors.grey,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        
-                        // Submit button
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            backgroundColor: const Color(0xFF9C27B0),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(_isLogin ? 'Iniciar Sesión' : 'Registrarse'),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Google Sign In Button
-                        OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _signInWithGoogle,
-                          icon: const Icon(Icons.g_mobiledata, size: 24),
-                          label: Text(_isLogin ? 'Continuar con Google' : 'Registrarse con Google'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: const BorderSide(color: Colors.grey),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Divider
-                        Row(
-                          children: [
-                            Expanded(child: Divider(color: Colors.grey[400])),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'o',
-                                style: TextStyle(color: Colors.grey[600]),
+                              label: const Text(
+                                'Diagnosticar conexión',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                            Expanded(child: Divider(color: Colors.grey[400])),
                           ],
                         ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Toggle between login and register
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pushReplacementNamed('/register');
-                          },
-                          child: const Text('¿No tienes una cuenta? Regístrate'),
-                        ),
-                        
-                        // Back to home
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushNamedAndRemoveUntil(
-                              context, 
-                              '/main',
-                              (route) => false, // Elimina todas las rutas anteriores
-                            );
-                          },
-                          child: const Text('Volver al inicio'),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Botón de diagnóstico
-                        OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _runDiagnostics,
-                          icon: const Icon(Icons.bug_report),
-                          label: const Text('Diagnóstico de Conexión'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            side: const BorderSide(color: Colors.orange),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+
+                    const SizedBox(height: 40),
+                  ],
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required IconData prefixIcon,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF222222),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          validator: validator,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Color(0xFF222222),
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 16,
+            ),
+            prefixIcon: Icon(
+              prefixIcon,
+              color: Colors.grey[600],
+              size: 22,
+            ),
+            suffixIcon: suffixIcon,
+            filled: true,
+            fillColor: Colors.grey[50],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFFF5A5F), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -293,29 +532,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
       try {
         final success = await context.read<AuthProvider>().login(
-          _emailController.text, 
-          _passwordController.text
+            _emailController.text,
+            _passwordController.text
         );
-        
+
         if (mounted && success) {
-          // Redirigir siempre al dashboard unificado
           Navigator.of(context).pushReplacementNamed('/dashboard');
         } else if (mounted) {
-          // Si el login falla pero no lanza excepción, mostrar error genérico
           setState(() {
             _error = 'Correo o contraseña incorrectos.';
           });
         }
       } catch (e) {
         if (mounted) {
-          // Traducir mensajes comunes del backend
           String errorMsg = ErrorHandler.getErrorMessage(e);
           if (e.toString().contains('These credentials do not match our records') ||
               e.toString().toLowerCase().contains('invalid credentials') ||
               e.toString().contains('Credenciales inválidas')) {
             errorMsg = 'Correo o contraseña incorrectos.';
           } else if (e.toString().toLowerCase().contains('user not found') ||
-                     e.toString().toLowerCase().contains('usuario no existe')) {
+              e.toString().toLowerCase().contains('usuario no existe')) {
             errorMsg = 'El usuario no existe.';
           } else if (e.toString().toLowerCase().contains('no se recibió el token')) {
             errorMsg = 'Error inesperado: no se recibió el token de autenticación.';
@@ -345,11 +581,14 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // TODO: Implementar autenticación con Google
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Autenticación con Google próximamente disponible'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('Autenticación con Google próximamente disponible'),
+          backgroundColor: Colors.orange[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } catch (e) {
@@ -375,12 +614,21 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final connectivityService = ConnectivityService();
       final results = await connectivityService.runDiagnostics();
-      
+
       if (mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Diagnóstico de Conexión'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Diagnóstico de Conexión',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF222222),
+              ),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,19 +639,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     result: results['backend_base'] ?? 'Error',
                     isSuccess: results['backend_base'] == 'Conectado',
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   _DiagnosticResult(
                     label: 'API Login',
                     result: results['api_login'] ?? 'Error',
                     isSuccess: results['api_login'] == 'Conectado',
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   _DiagnosticResult(
                     label: 'API Users',
                     result: results['api_users'] ?? 'Error',
                     isSuccess: results['api_users'] == 'Conectado',
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   _DiagnosticResult(
                     label: 'API Roles',
                     result: results['api_roles'] ?? 'Error',
@@ -415,7 +663,13 @@ class _LoginScreenState extends State<LoginScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cerrar'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFFF5A5F),
+                ),
+                child: const Text(
+                  'Cerrar',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -426,7 +680,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error en diagnóstico: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -453,33 +711,48 @@ class _DiagnosticResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          isSuccess ? Icons.check_circle : Icons.error,
-          color: isSuccess ? Colors.green : Colors.red,
-          size: 20,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isSuccess ? Colors.green[50] : Colors.red[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSuccess ? Colors.green[200]! : Colors.red[200]!,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                result,
-                style: TextStyle(
-                  color: isSuccess ? Colors.green : Colors.red,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isSuccess ? Icons.check_circle_outline : Icons.error_outline,
+            color: isSuccess ? Colors.green[600] : Colors.red[600],
+            size: 24,
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  result,
+                  style: TextStyle(
+                    color: isSuccess ? Colors.green[700] : Colors.red[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

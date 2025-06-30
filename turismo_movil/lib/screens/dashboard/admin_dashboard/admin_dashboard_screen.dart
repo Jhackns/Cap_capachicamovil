@@ -28,7 +28,6 @@ import '../../MenuDashboard/PlanesDashboard/planes_management_screen.dart';
 import '../../../blocs/servicios/servicios_bloc.dart';
 import '../../../blocs/servicios/servicios_event.dart';
 import '../user_dashboard/user_dashboard_screen.dart';
-
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
 
@@ -80,7 +79,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ),
     const _PlaceholderScreen(title: 'Gestión de Categorías'),
     ReservasDashboardScreen(),
-    const MisReservasScreen(),
+    const _PlaceholderScreen(title: 'Mis Reservas'),
     const _PlaceholderScreen(title: 'Mis Inscripciones'),
     BlocProvider(
       create: (_) => PlanesBloc()..add(LoadPlanes()),
@@ -140,25 +139,131 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        title: const Text('Panel de Administración'),
-        backgroundColor: const Color(0xFF9C27B0),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          if (_selectedIndex > 0)
-            IconButton(
-              icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF121212) : const Color(0xFFF7F7F7),
+      appBar: _buildAppBar(user, themeProvider, authProvider),
+      drawer: _buildDrawer(user, themeProvider),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(User? user, ThemeProvider themeProvider, AuthProvider authProvider) {
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+    final secondaryTextColor = themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171);
+
+    return AppBar(
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+      foregroundColor: primaryTextColor,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: Icon(Icons.menu_rounded, color: primaryTextColor),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
+      ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF5A5F),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.dashboard_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Admin Panel',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: primaryTextColor,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        if (_selectedIndex > 0)
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF7F7F7),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: IconButton(
+              icon: Icon(
+                _isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded,
+                color: secondaryTextColor,
+              ),
               onPressed: () {
                 setState(() => _isGridView = !_isGridView);
               },
               tooltip: _isGridView ? 'Vista de lista' : 'Vista de cuadrícula',
             ),
-          IconButton(
-            icon: Icon(themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+          ),
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF7F7F7),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: IconButton(
+            icon: Icon(
+              themeProvider.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              color: secondaryTextColor,
+            ),
             onPressed: () => themeProvider.toggleTheme(!themeProvider.isDarkMode),
           ),
-          PopupMenuButton<String>(
+        ),
+        Container(
+          margin: const EdgeInsets.only(right: 16),
+          child: PopupMenuButton<String>(
+            offset: const Offset(0, 45),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                border: Border.all(color: themeProvider.isDarkMode ? const Color(0xFF444444) : const Color(0xFFDDDDDD)),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: secondaryTextColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(
+                        (user?.name ?? 'A').substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: secondaryTextColor,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ),
             onSelected: (value) async {
               switch (value) {
                 case 'profile':
@@ -173,217 +278,375 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/login',
-                      (route) => false,
+                          (route) => false,
                     );
                   }
                   break;
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'profile',
                 child: Row(
                   children: [
-                    Icon(Icons.person),
-                    SizedBox(width: 8),
-                    Text('Mi Perfil'),
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF7F7F7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(Icons.person_rounded, size: 16, color: secondaryTextColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('Mi Perfil', style: TextStyle(fontSize: 14, color: primaryTextColor)),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'settings',
                 child: Row(
                   children: [
-                    Icon(Icons.settings),
-                    SizedBox(width: 8),
-                    Text('Configuración'),
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF7F7F7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(Icons.settings_rounded, size: 16, color: secondaryTextColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('Configuración', style: TextStyle(fontSize: 14, color: primaryTextColor)),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              const PopupMenuDivider(),
+              PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Cerrar Sesión'),
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF7F7F7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.logout_rounded, size: 16, color: Color(0xFFFF5A5F)),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Cerrar Sesión', style: TextStyle(fontSize: 14, color: Color(0xFFFF5A5F))),
                   ],
                 ),
               ),
             ],
           ),
-        ],
-      ),
-      drawer: _buildDrawer(user),
-      body: IndexedStack(index: _selectedIndex, children: _screens),
+        ),
+      ],
     );
   }
 
-  Widget _buildDrawer(User? user) {
+  Widget _buildDrawer(User? user, ThemeProvider themeProvider) {
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+    final secondaryTextColor = themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171);
+
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFF9C27B0)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.admin_panel_settings_rounded,
-                    size: 32,
-                    color: Color(0xFF9C27B0),
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header del drawer
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF7F7F7),
+                border: Border(bottom: BorderSide(color: themeProvider.isDarkMode ? const Color(0xFF444444) : const Color(0xFFEBEBEB))),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF5A5F),
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: Center(
+                      child: Text(
+                        (user?.name ?? 'A').substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  user?.name ?? 'Administrador',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 16),
+                  Text(
+                    user?.name ?? 'Administrador',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: primaryTextColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  user?.email ?? 'admin@email.com',
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    user?.email ?? 'admin@email.com',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: secondaryTextColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Dashboard'),
-            selected: _selectedIndex == 0,
-            onTap: () => _onDrawerItemTapped(0),
-          ),
-          const Divider(),
-          const _DrawerHeader('GESTIÓN DE USUARIOS'),
-          ExpansionTile(
-            leading: const Icon(Icons.people_alt_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Usuarios'),
-            initiallyExpanded: _selectedIndex >= 1 && _selectedIndex <= 3,
-            children: [
-              _buildSubListTile(title: 'Gestión de Usuarios', index: 1),
-              _buildSubListTile(title: 'Roles', index: 2),
-              _buildSubListTile(title: 'Permisos', index: 3),
-            ],
-          ),
-          const Divider(),
-          const _DrawerHeader('GESTIÓN DE CONTENIDO'),
-          ExpansionTile(
-            leading: const Icon(Icons.store_mall_directory_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Emprendedores'),
-            initiallyExpanded: _selectedIndex == 4 || _selectedIndex == 5,
-            children: [
-              _buildSubListTile(title: 'Gestión de Emprendedores', index: 4),
-              _buildSubListTile(title: 'Gestión de Asociaciones', index: 5),
-            ],
-          ),
-          ListTile(
-            leading: const Icon(Icons.location_city_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Municipalidad'),
-            selected: _selectedIndex == 6,
-            onTap: () => _onDrawerItemTapped(6),
-          ),
-          ExpansionTile(
-            leading: const Icon(Icons.miscellaneous_services_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Servicios'),
-            initiallyExpanded: _selectedIndex == 7 || _selectedIndex == 8,
-            children: [
-              _buildSubListTile(title: 'Gestión de Servicios', index: 7),
-              _buildSubListTile(title: 'Categorías', index: 8),
-            ],
-          ),
-          ExpansionTile(
-            leading: const Icon(Icons.calendar_today_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Reservas'),
-            initiallyExpanded: _selectedIndex >= 9 && _selectedIndex <= 11,
-            children: [
-              _buildSubListTile(title: 'Gestión de Reservas', index: 9),
-              _buildSubListTile(title: 'Mis Reservas', index: 10),
-              _buildSubListTile(title: 'Mis Inscripciones', index: 11),
-            ],
-          ),
-          ListTile(
-            leading: const Icon(Icons.assignment_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Gestionar Planes'),
-            selected: _selectedIndex == 12,
-            onTap: () => _onDrawerItemTapped(12),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.person_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Mi Perfil'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/profile');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Configuración'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/settings');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout_rounded, color: Color(0xFF9C27B0)),
-            title: const Text('Cerrar Sesión'),
-            onTap: () async {
-              Navigator.pop(context);
-              await context.read<AuthProvider>().logout();
-              if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (route) => false,
-                );
-              }
-            },
-          ),
-        ],
+
+            // Contenido del drawer
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  _buildDrawerItem(
+                    icon: Icons.dashboard_rounded,
+                    title: 'Dashboard',
+                    isSelected: _selectedIndex == 0,
+                    onTap: () => _onDrawerItemTapped(0),
+                  ),
+
+                  const SizedBox(height: 24),
+                  _buildDrawerSection('GESTIÓN DE USUARIOS'),
+                  _buildDrawerExpandableItem(
+                    icon: Icons.people_rounded,
+                    title: 'Usuarios',
+                    isExpanded: _selectedIndex >= 1 && _selectedIndex <= 3,
+                    children: [
+                      _buildDrawerSubItem('Gestión de Usuarios', 1),
+                      _buildDrawerSubItem('Roles', 2),
+                      _buildDrawerSubItem('Permisos', 3),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+                  _buildDrawerSection('GESTIÓN DE CONTENIDO'),
+                  _buildDrawerExpandableItem(
+                    icon: Icons.store_rounded,
+                    title: 'Emprendedores',
+                    isExpanded: _selectedIndex == 4 || _selectedIndex == 5,
+                    children: [
+                      _buildDrawerSubItem('Gestión de Emprendedores', 4),
+                      _buildDrawerSubItem('Gestión de Asociaciones', 5),
+                    ],
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.location_city_rounded,
+                    title: 'Municipalidad',
+                    isSelected: _selectedIndex == 6,
+                    onTap: () => _onDrawerItemTapped(6),
+                  ),
+                  _buildDrawerExpandableItem(
+                    icon: Icons.miscellaneous_services_rounded,
+                    title: 'Servicios',
+                    isExpanded: _selectedIndex == 7 || _selectedIndex == 8,
+                    children: [
+                      _buildDrawerSubItem('Gestión de Servicios', 7),
+                      _buildDrawerSubItem('Categorías', 8),
+                    ],
+                  ),
+                  _buildDrawerExpandableItem(
+                    icon: Icons.calendar_today_rounded,
+                    title: 'Reservas',
+                    isExpanded: _selectedIndex >= 9 && _selectedIndex <= 11,
+                    children: [
+                      _buildDrawerSubItem('Gestión de Reservas', 9),
+                      _buildDrawerSubItem('Mis Reservas', 10),
+                      _buildDrawerSubItem('Mis Inscripciones', 11),
+                    ],
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.assignment_rounded,
+                    title: 'Gestionar Planes',
+                    isSelected: _selectedIndex == 12,
+                    onTap: () => _onDrawerItemTapped(12),
+                  ),
+                ],
+              ),
+            ),
+
+            // Footer del drawer
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: themeProvider.isDarkMode ? const Color(0xFF444444) : const Color(0xFFEBEBEB))),
+              ),
+              child: Column(
+                children: [
+                  _buildDrawerItem(
+                    icon: Icons.person_rounded,
+                    title: 'Mi Perfil',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.settings_rounded,
+                    title: 'Configuración',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/settings');
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.logout_rounded,
+                    title: 'Cerrar Sesión',
+                    iconColor: const Color(0xFFFF5A5F),
+                    textColor: const Color(0xFFFF5A5F),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await context.read<AuthProvider>().logout();
+                      if (mounted) {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/login',
+                              (route) => false,
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSubListTile({required String title, required int index}) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 24.0),
-      child: ListTile(
-        title: Text(title),
-        selected: _selectedIndex == index,
-        onTap: () => _onDrawerItemTapped(index),
-        dense: true,
-      ),
-    );
-  }
-}
-
-class _DrawerHeader extends StatelessWidget {
-  final String title;
-  const _DrawerHeader(this.title);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildDrawerSection(String title) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Text(
         title,
         style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).primaryColor.withOpacity(0.7),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171),
+          letterSpacing: 0.5,
         ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    bool isSelected = false,
+    Color? iconColor,
+    Color? textColor,
+    required VoidCallback onTap,
+  }) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+    final secondaryTextColor = themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: isSelected
+              ? const Color(0xFFFF5A5F)
+              : (iconColor ?? secondaryTextColor),
+          size: 20,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected
+                ? primaryTextColor
+                : (textColor ?? secondaryTextColor),
+          ),
+        ),
+        selected: isSelected,
+        selectedTileColor: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF7F7F7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildDrawerExpandableItem({
+    required IconData icon,
+    required String title,
+    required bool isExpanded,
+    required List<Widget> children,
+  }) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+    final secondaryTextColor = themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: ExpansionTile(
+        leading: Icon(
+          icon,
+          color: isExpanded ? const Color(0xFFFF5A5F) : secondaryTextColor,
+          size: 20,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isExpanded ? FontWeight.w600 : FontWeight.w400,
+            color: isExpanded ? primaryTextColor : secondaryTextColor,
+          ),
+        ),
+        initiallyExpanded: isExpanded,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        childrenPadding: const EdgeInsets.only(left: 16),
+        iconColor: secondaryTextColor,
+        collapsedIconColor: secondaryTextColor,
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildDrawerSubItem(String title, int index) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+    final secondaryTextColor = themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171);
+    final isSelected = _selectedIndex == index;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 1),
+      child: ListTile(
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? primaryTextColor : secondaryTextColor,
+          ),
+        ),
+        selected: isSelected,
+        selectedTileColor: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF7F7F7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        dense: true,
+        onTap: () => _onDrawerItemTapped(index),
       ),
     );
   }
@@ -393,7 +656,10 @@ class _DashboardContent extends StatefulWidget {
   final DashboardService dashboardService;
   final void Function(int index) onNavigateToSection;
 
-  const _DashboardContent({required this.dashboardService, required this.onNavigateToSection});
+  const _DashboardContent({
+    required this.dashboardService,
+    required this.onNavigateToSection,
+  });
 
   @override
   State<_DashboardContent> createState() => _DashboardContentState();
@@ -404,7 +670,6 @@ class _DashboardContentState extends State<_DashboardContent> {
   String? _error;
   Map<String, dynamic>? _stats;
 
-  // Datos de ejemplo para mostrar mientras se cargan los datos reales
   final Map<String, dynamic> _exampleStats = {
     'total_users': 156,
     'active_users': 142,
@@ -444,6 +709,7 @@ class _DashboardContentState extends State<_DashboardContent> {
     });
     try {
       final stats = await widget.dashboardService.getDashboardStats();
+      print('Stats: $stats'); // Debug print to inspect API response
       if (mounted) {
         setState(() {
           _stats = stats;
@@ -463,471 +729,377 @@ class _DashboardContentState extends State<_DashboardContent> {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).currentUser;
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final stats = _stats ?? _exampleStats;
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+    final secondaryTextColor = themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171);
+
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator(color: const Color(0xFFFF5A5F)));
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: const Color(0xFFFF5A5F), size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'Error al cargar los datos: $_error',
+              style: TextStyle(color: primaryTextColor, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadDashboardData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5A5F),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: _loadDashboardData,
+      color: const Color(0xFFFF5A5F),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header de bienvenida
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF9C27B0), Color(0xFF7B1FA2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.purple.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+        padding: const EdgeInsets.all(8.0), // Reducido de 24 para minimizar acumulación
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height - kToolbarHeight,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Hero Section
+              Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFFF5A5F),
+                      Color(0xFFE91E63),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.white,
-                        child: Icon(
-                          Icons.admin_panel_settings_rounded,
-                          size: 32,
-                          color: Color(0xFF9C27B0),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16), // Reducido de 24
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Text(
-                              '¡Bienvenido, ${user?.name ?? 'Administrador'}!',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  (user?.name ?? 'A').substring(0, 1).toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Panel de Control de Administración',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 16,
+                            const SizedBox(width: 12), // Reducido de 16
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Hola, ${user?.name?.split(' ').first ?? 'Admin'}! 👋',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16, // Reducido de 28
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4), // Reducido de 8
+                                  Text(
+                                    'Bienvenido a tu panel de administración',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 14, // Reducido de 16
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        color: Colors.white.withOpacity(0.8),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Última actualización: ${DateTime.now().toString().substring(11, 16)}',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Botón temporal para probar rutas
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  final results = await widget.dashboardService.testRoutes();
-                  if (mounted) {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Resultados de Prueba'),
-                        content: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 8), // Reducido de 24
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Reducido de 16 y 8
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: results.entries.map((entry) {
-                              final data = entry.value as Map<String, dynamic>;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${entry.key.toUpperCase()}:',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  Text('Status: ${data['status']}'),
-                                  Text('Success: ${data['success']}'),
-                                  if (data['error'] != null)
-                                    Text('Error: ${data['error']}'),
-                                  if (data['body'] != null)
-                                    Text('Body: ${data['body']}'),
-                                  const SizedBox(height: 8),
-                                ],
-                              );
-                            }).toList(),
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                color: Colors.white.withOpacity(0.8),
+                                size: 8, // Reducido de 16
+                              ),
+                              const SizedBox(width: 4), // Reducido de 8
+                              Text(
+                                'Última actualización: ${DateTime.now().toString().substring(11, 16)}',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 8, // Reducido de 14
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cerrar'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(16), // Reducido de 24
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Quick Stats Cards
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isSmallScreen = constraints.maxWidth < 600;
+                        final crossAxisCount = isSmallScreen ? 2 : 4;
+
+                        return GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 4, // Reducido de 16
+                          mainAxisSpacing: 4, // Reducido de 16
+                          childAspectRatio: isSmallScreen ? 1.1 : 1.0,
+                          children: [
+                            _buildModernStatCard(
+                              'Usuarios',
+                              '${stats['total_users'] ?? 0}',
+                              Icons.people_rounded,
+                              const Color(0xFF4285F4),
+                              '${stats['active_users'] ?? 0} activos',
+                              onTap: () => widget.onNavigateToSection(1),
+                            ),
+                            _buildModernStatCard(
+                              'Emprendedores',
+                              '${stats['total_entrepreneurs'] ?? 0}',
+                              Icons.store_rounded,
+                              const Color(0xFF34A853),
+                              'Registrados',
+                              onTap: () => widget.onNavigateToSection(4),
+                            ),
+                            _buildModernStatCard(
+                              'Municipalidades',
+                              '${stats['total_municipalities'] ?? 0}',
+                              Icons.location_city_rounded,
+                              const Color(0xFFFBBC04),
+                              'Activas',
+                              onTap: () => widget.onNavigateToSection(6),
+                            ),
+                            _buildModernStatCard(
+                              'Servicios',
+                              '${stats['total_services'] ?? 0}',
+                              Icons.miscellaneous_services_rounded,
+                              const Color(0xFFE91E63),
+                              'Totales',
+                              onTap: () => widget.onNavigateToSection(7),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 16), // Reducido de 32
+
+                    // Recent Activities Section
+                    Text(
+                      'Actividad Reciente',
+                      style: TextStyle(
+                        fontSize: 16, // Reducido de 20
+                        fontWeight: FontWeight.w600,
+                        color: primaryTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8), // Reducido de 16
+                    stats['recent_activities'] != null && stats['recent_activities'].isNotEmpty
+                        ? ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: stats['recent_activities'].length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        color: themeProvider.isDarkMode ? const Color(0xFF444444) : const Color(0xFFEBEBEB),
+                      ),
+                      itemBuilder: (context, index) {
+                        final activity = stats['recent_activities'][index];
+                        return _buildActivityCard(
+                          type: activity['type'] ?? 'unknown',
+                          message: activity['message'] ?? 'Sin descripción',
+                          time: activity['time'] ?? 'Sin tiempo',
+                        );
+                      },
+                    )
+                        : Container(
+                      padding: const EdgeInsets.all(8), // Reducido de 16
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(themeProvider.isDarkMode ? 0.2 : 0.05),
+                            blurRadius: 6, // Reducido de 8
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
-                    );
-                  }
-                }
-              },
-              child: const Text('🔍 Probar Rutas'),
-            ),
+                      child: Text(
+                        'No hay actividades recientes',
+                        style: TextStyle(
+                          fontSize: 8, // Reducido de 14
+                          color: secondaryTextColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
 
-            // Tarjetas de estadísticas
-            Text(
-              'Estadísticas Generales',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF9C27B0),
-              ),
-            ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isSmallScreen = constraints.maxWidth < 600;
-                final crossAxisCount = isSmallScreen ? 1 : 2;
-                
-                return GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: isSmallScreen ? 1.5 : 1.2,
-                  children: [
-                    _buildStatCard(
-                      'Usuarios',
-                      '${stats['total_users']}',
-                      Icons.people_rounded,
-                      Colors.blue,
-                      '${stats['active_users']} activos',
+                    const SizedBox(height: 8), // Reducido de 32
+
+                    // Quick Actions Section
+                    Text(
+                      'Acciones Rápidas',
+                      style: TextStyle(
+                        fontSize: 18, // Reducido de 20
+                        fontWeight: FontWeight.w600,
+                        color: primaryTextColor,
+                      ),
                     ),
-                    _buildStatCard(
-                      'Emprendedores',
-                      '${stats['total_entrepreneurs']}',
-                      Icons.store_rounded,
-                      Colors.green,
-                      'Registrados',
-                    ),
-                    _buildStatCard(
-                      'Municipalidades',
-                      '${stats['total_municipalities']}',
-                      Icons.location_city_rounded,
-                      Colors.orange,
-                      'Activas',
-                    ),
-                    _buildStatCard(
-                      'Servicios',
-                      '${stats['total_services']}',
-                      Icons.miscellaneous_services_rounded,
-                      Colors.purple,
-                      'Disponibles',
+                    const SizedBox(height: 8), // Reducido de 16
+                    Wrap(
+                      spacing: 8, // Reducido de 16
+                      runSpacing: 8, // Reducido de 16
+                      children: [
+                        _buildQuickActionButton(
+                          icon: Icons.person_add_rounded,
+                          label: 'Agregar Usuario',
+                          onTap: () => widget.onNavigateToSection(1),
+                        ),
+                        _buildQuickActionButton(
+                          icon: Icons.store_rounded,
+                          label: 'Nuevo Emprendedor',
+                          onTap: () => widget.onNavigateToSection(4),
+                        ),
+                        _buildQuickActionButton(
+                          icon: Icons.miscellaneous_services_rounded,
+                          label: 'Crear Servicio',
+                          onTap: () => widget.onNavigateToSection(7),
+                        ),
+                        _buildQuickActionButton(
+                          icon: Icons.calendar_today_rounded,
+                          label: 'Ver Reservas',
+                          onTap: () => widget.onNavigateToSection(9),
+                        ),
+                      ],
                     ),
                   ],
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Actividad reciente
-            Text(
-              'Actividad Reciente',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF9C27B0),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: stats['recent_activities']?.length ?? 0,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final activity = stats['recent_activities'][index];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: _getActivityColor(activity['type']),
-                      child: Icon(
-                        _getActivityIcon(activity['type']),
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      activity['message'],
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: Text(
-                      'Hace ${activity['time']}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                    trailing: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: Colors.grey[400],
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Acciones rápidas
-            Text(
-              'Acciones Rápidas',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF9C27B0),
-              ),
-            ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isSmallScreen = constraints.maxWidth < 600;
-                
-                if (isSmallScreen) {
-                  // En pantallas pequeñas, apilar verticalmente
-                  return Column(
-                    children: [
-                      _buildQuickActionCard(
-                        'Gestionar Usuarios',
-                        Icons.people_alt_rounded,
-                        Colors.blue,
-                        () {
-                          widget.onNavigateToSection(1); // Ir a gestión de usuarios
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildQuickActionCard(
-                        'Emprendedores',
-                        Icons.store_rounded,
-                        Colors.green,
-                        () {
-                          widget.onNavigateToSection(4); // Ir a gestión de emprendedores
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildQuickActionCard(
-                        'Municipalidades',
-                        Icons.location_city_rounded,
-                        Colors.orange,
-                        () {
-                          widget.onNavigateToSection(6); // Ir a gestión de municipalidades
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildQuickActionCard(
-                        'Configuración',
-                        Icons.settings_rounded,
-                        Colors.purple,
-                        () => Navigator.pushNamed(context, '/settings'),
-                      ),
-                    ],
-                  );
-                } else {
-                  // En pantallas grandes, usar GridView
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickActionCard(
-                              'Gestionar Usuarios',
-                              Icons.people_alt_rounded,
-                              Colors.blue,
-                              () {
-                                widget.onNavigateToSection(1); // Ir a gestión de usuarios
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildQuickActionCard(
-                              'Emprendedores',
-                              Icons.store_rounded,
-                              Colors.green,
-                              () {
-                                widget.onNavigateToSection(4); // Ir a gestión de emprendedores
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickActionCard(
-                              'Municipalidades',
-                              Icons.location_city_rounded,
-                              Colors.orange,
-                              () {
-                                widget.onNavigateToSection(6); // Ir a gestión de municipalidades
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildQuickActionCard(
-                              'Configuración',
-                              Icons.settings_rounded,
-                              Colors.purple,
-                              () => Navigator.pushNamed(context, '/settings'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                }
-              },
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-    String subtitle,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+              const SizedBox(height: 8), // Buffer mínimo
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: color.withOpacity(0.1),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(fontSize: 12, color: color.withOpacity(0.7)),
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildQuickActionCard(
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
+  Widget _buildModernStatCard(
+      String title,
+      String value,
+      IconData icon,
+      Color color,
+      String subtitle, {
+        VoidCallback? onTap,
+      }) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+    final secondaryTextColor = themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171);
+
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.1),
+              color: Colors.black.withOpacity(themeProvider.isDarkMode ? 0.2 : 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 32),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 24, color: color),
+            ),
             const SizedBox(height: 12),
             Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
               title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: secondaryTextColor,
+              ),
             ),
           ],
         ),
@@ -935,60 +1107,146 @@ class _DashboardContentState extends State<_DashboardContent> {
     );
   }
 
-  Color _getActivityColor(String type) {
-    switch (type) {
-      case 'user_registration':
-        return Colors.blue;
-      case 'entrepreneur_approved':
-        return Colors.green;
-      case 'reservation_created':
-        return Colors.orange;
-      default:
-        return Colors.grey;
+  Widget _buildActivityCard({
+    required String type,
+    required String message,
+    required String time,
+  }) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+    final secondaryTextColor = themeProvider.isDarkMode ? const Color(0xFFB0B0B0) : const Color(0xFF717171);
+
+    IconData getIcon() {
+      switch (type) {
+        case 'user_registration':
+          return Icons.person_add_rounded;
+        case 'entrepreneur_approved':
+          return Icons.check_circle_rounded;
+        case 'reservation_created':
+          return Icons.calendar_today_rounded;
+        default:
+          return Icons.info_rounded;
+      }
     }
-  }
 
-  IconData _getActivityIcon(String type) {
-    switch (type) {
-      case 'user_registration':
-        return Icons.person_add_rounded;
-      case 'entrepreneur_approved':
-        return Icons.check_circle_rounded;
-      case 'reservation_created':
-        return Icons.calendar_today_rounded;
-      default:
-        return Icons.info_rounded;
+    Color getColor() {
+      switch (type) {
+        case 'user_registration':
+          return const Color(0xFF4285F4);
+        case 'entrepreneur_approved':
+          return const Color(0xFF34A853);
+        case 'reservation_created':
+          return const Color(0xFFE91E63);
+        default:
+          return secondaryTextColor;
+      }
     }
-  }
-}
 
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const _PlaceholderScreen({Key? key, required this.title}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      child: Row(
         children: [
-          const Icon(Icons.construction_rounded, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: getColor().withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Icon(getIcon(), size: 20, color: getColor()),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Funcionalidad próximamente disponible',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: primaryTextColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: secondaryTextColor,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-} 
+
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+
+    return SizedBox(
+      width: 160,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          foregroundColor: const Color(0xFFFF5A5F),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: themeProvider.isDarkMode ? const Color(0xFF444444) : const Color(0xFFEBEBEB)),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: primaryTextColor,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlaceholderScreen extends StatelessWidget {
+  final String title;
+
+  const _PlaceholderScreen({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final primaryTextColor = themeProvider.isDarkMode ? Colors.white : const Color(0xFF222222);
+
+    return Center(
+      child: Text(
+        '$title en desarrollo',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          color: primaryTextColor,
+        ),
+      ),
+    );
+  }
+}

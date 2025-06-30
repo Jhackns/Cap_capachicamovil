@@ -3,7 +3,7 @@ import '../services/auth_service.dart';
 
 class ApiConfig {
   // URL base del backend
-  static const String baseUrl = 'http://192.168.1.64:8000';
+  static const String baseUrl = 'http://192.168.195.160:8000';
   
   // Token de autenticación
   static Future<String?> get token async {

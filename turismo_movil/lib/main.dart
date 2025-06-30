@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-//import 'package:tourcap_capachica/chatbot/chatbot.dart';
+import 'package:turismo_movil/chatbot/chatbot.dart';
+
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -84,6 +85,7 @@ class MyApp extends StatelessWidget {
           '/gastronomia': (context) => const GastronomiaScreen(),
           '/turismo': (context) => const TurismoScreen(),
           '/artesania': (context) => const ArtesaniaScreen(),
+          '/support': (context) =>  ChatScreen(),
         },
         onUnknownRoute: (settings) {
           return MaterialPageRoute(

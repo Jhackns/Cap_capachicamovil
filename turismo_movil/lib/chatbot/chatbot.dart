@@ -45,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
 
   // Cambia esta URL por tu webhook real
-  static const String WEBHOOK_URL = 'https://5e74-191-98-175-165.ngrok-free.app/webhook/bot-turismo';
+  static const String WEBHOOK_URL = 'http://192.168.195.160/webhook/bot-turismo';
 
   @override
   void initState() {
