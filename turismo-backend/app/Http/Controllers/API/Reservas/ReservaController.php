@@ -51,7 +51,7 @@ class ReservaController extends Controller
             } else {
                 $reservas = $this->repository->getByUsuario(Auth::id());
             }
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $reservas
@@ -92,7 +92,7 @@ class ReservaController extends Controller
     {
         try {
             $reserva = $this->repository->findById($id);
-            
+
             // Verificar que la reserva pertenece al usuario actual (a menos que sea admin)
             if (!Auth::user()->hasRole('admin') && $reserva->usuario_id !== Auth::id()) {
                 return response()->json([
@@ -100,14 +100,14 @@ class ReservaController extends Controller
                     'message' => 'No tienes permiso para ver esta reserva'
                 ], Response::HTTP_FORBIDDEN);
             }
-            
+
             if (!$reserva) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Reserva no encontrada'
                 ], Response::HTTP_NOT_FOUND);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $reserva
@@ -146,17 +146,17 @@ public function store(ReservaRequest $request): JsonResponse
     try {
         // Obtener datos validados
         $data = $request->validated();
-        
+
         // Siempre asignar el usuario autenticado actual
         $data['usuario_id'] = Auth::id();
-        
+
         // Extraer servicios
         $servicios = $data['servicios'] ?? [];
         unset($data['servicios']);
-        
+
         // Crear reserva con sus servicios
         $reserva = $this->repository->create($data, $servicios);
-        
+
         return response()->json([
             'success' => true,
             'data' => $reserva,
@@ -207,38 +207,38 @@ public function store(ReservaRequest $request): JsonResponse
         try {
             // Verificar que la reserva pertenece al usuario actual (a menos que sea admin)
             $reserva = $this->repository->findById($id);
-            
+
             if (!$reserva) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Reserva no encontrada'
                 ], Response::HTTP_NOT_FOUND);
             }
-            
+
             if (!Auth::user()->hasRole('admin') && $reserva->usuario_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No tienes permiso para modificar esta reserva'
                 ], Response::HTTP_FORBIDDEN);
             }
-            
+
             // Obtener datos validados
             $data = $request->validated();
-            
+
             // Extraer servicios
             $servicios = $data['servicios'] ?? [];
             unset($data['servicios']);
-            
+
             // Actualizar reserva con sus servicios
             $updated = $this->repository->update($id, $data, $servicios);
-            
+
             if (!$updated) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se pudo actualizar la reserva'
                 ], Response::HTTP_BAD_REQUEST);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $this->repository->findById($id),
@@ -285,30 +285,30 @@ public function store(ReservaRequest $request): JsonResponse
         try {
             // Verificar que la reserva pertenece al usuario actual (a menos que sea admin)
             $reserva = $this->repository->findById($id);
-            
+
             if (!$reserva) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Reserva no encontrada'
                 ], Response::HTTP_NOT_FOUND);
             }
-            
+
             if (!Auth::user()->hasRole('admin') && $reserva->usuario_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No tienes permiso para eliminar esta reserva'
                 ], Response::HTTP_FORBIDDEN);
             }
-            
+
             $deleted = $this->repository->delete($id);
-            
+
             if (!$deleted) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se pudo eliminar la reserva'
                 ], Response::HTTP_BAD_REQUEST);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Reserva eliminada exitosamente'
@@ -321,7 +321,7 @@ public function store(ReservaRequest $request): JsonResponse
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     /**
      * @OA\Put(
      *     path="/api/reservas/{id}/estado",
@@ -366,34 +366,34 @@ public function store(ReservaRequest $request): JsonResponse
             $validator = Validator::make($request->all(), [
                 'estado' => 'required|in:pendiente,confirmada,cancelada,completada',
             ]);
-            
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'errors' => $validator->errors()
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-            
+
             // Verificar permisos
             $reserva = $this->repository->findById($id);
-            
+
             if (!$reserva) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Reserva no encontrada'
                 ], Response::HTTP_NOT_FOUND);
             }
-            
+
             $estado = $request->input('estado');
             $updated = $this->repository->cambiarEstado($id, $estado);
-            
+
             if (!$updated) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se pudo actualizar el estado de la reserva'
                 ], Response::HTTP_BAD_REQUEST);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Estado de reserva actualizado exitosamente',
@@ -407,7 +407,7 @@ public function store(ReservaRequest $request): JsonResponse
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     /**
      * @OA\Get(
      *     path="/api/reservas/emprendedor/{emprendedorId}",
@@ -431,16 +431,16 @@ public function store(ReservaRequest $request): JsonResponse
     {
         try {
             // Verificar que el usuario es administrador del emprendedor o es admin global
-            if (!Auth::user()->hasRole('admin') && 
+            if (!Auth::user()->hasRole('admin') &&
                 !Auth::user()->emprendedores()->where('emprendedor_id', $emprendedorId)->exists()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No tienes permiso para ver estas reservas'
                 ], Response::HTTP_FORBIDDEN);
             }
-            
+
             $reservas = $this->repository->getByEmprendedor($emprendedorId);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $reservas
@@ -453,7 +453,7 @@ public function store(ReservaRequest $request): JsonResponse
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     /**
      * @OA\Get(
      *     path="/api/reservas/servicio/{servicioId}",
@@ -478,25 +478,25 @@ public function store(ReservaRequest $request): JsonResponse
         try {
             // Obtener información del servicio para verificar permisos
             $servicio = app(ServicioRepository::class)->findById($servicioId);
-            
+
             if (!$servicio) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Servicio no encontrado'
                 ], Response::HTTP_NOT_FOUND);
             }
-            
+
             // Verificar permisos
-            if (!Auth::user()->hasRole('admin') && 
+            if (!Auth::user()->hasRole('admin') &&
                 !Auth::user()->emprendedores()->where('emprendedor_id', $servicio->emprendedor_id)->exists()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No tienes permiso para ver estas reservas'
                 ], Response::HTTP_FORBIDDEN);
             }
-            
+
             $reservas = $this->repository->getByServicio($servicioId);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $reservas
@@ -563,14 +563,14 @@ public function store(ReservaRequest $request): JsonResponse
                 'servicios.*.notas_cliente' => 'nullable|string',
                 'notas' => 'nullable|string',
             ]);
-            
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'errors' => $validator->errors()
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-            
+
             // Crear array de datos con datos del usuario autenticado
             $data = [
                 'usuario_id' => Auth::id(),
@@ -578,18 +578,18 @@ public function store(ReservaRequest $request): JsonResponse
                 'estado' => Reserva::ESTADO_PENDIENTE,
                 'notas' => $request->notas
             ];
-            
+
             // Obtener servicios de la solicitud
             $servicios = $request->servicios;
-            
+
             // Establecer estado pendiente para todos los servicios
             foreach ($servicios as $key => $servicio) {
                 $servicios[$key]['estado'] = ReservaServicio::ESTADO_PENDIENTE;
             }
-            
+
             // Crear reserva con servicios
             $reserva = $this->repository->create($data, $servicios);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $reserva,
@@ -624,7 +624,7 @@ public function store(ReservaRequest $request): JsonResponse
         try {
             // Obtener las reservas del usuario autenticado utilizando el método existente del repositorio
             $reservas = $this->repository->getByUsuario(Auth::id());
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $reservas

@@ -5,6 +5,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../models/servicio.dart';
 import '../../../../providers/auth_provider.dart';
+import '../../../../providers/carrito_provider.dart';
 import '../../../../services/servicio_service.dart';
 import '../../../../config/api_config.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -1430,6 +1431,8 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
   }
 
   Widget _buildActionButtons(AuthProvider authProvider) {
+    final carritoProvider = Provider.of<CarritoProvider>(context, listen: false);
+    
     // Determinar el texto y estado del botón principal
     String buttonText;
     VoidCallback? onPressed;
@@ -1455,17 +1458,35 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
       onPressed = _isCheckingAvailability ? null : _checkAvailability;
       isEnabled = !_isCheckingAvailability;
     } else if (_isAvailable) {
-      buttonText = 'Agregar al Carrito';
-      onPressed = () {
-        // TODO: Implementar funcionalidad de carrito
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Funcionalidad de carrito próximamente disponible'),
-            backgroundColor: Colors.blue,
-          ),
-        );
-      };
-      buttonColor = Colors.green;
+      // Verificar si el servicio ya está en el carrito
+      final horaInicio24 = _selectedStartTime!.hour.toString().padLeft(2, '0') + ':' + 
+                          _selectedStartTime!.minute.toString().padLeft(2, '0') + ':00';
+      final horaFin24 = _selectedEndTime!.hour.toString().padLeft(2, '0') + ':' + 
+                       _selectedEndTime!.minute.toString().padLeft(2, '0') + ':00';
+      
+      final yaEnCarrito = carritoProvider.servicioEnCarrito(
+        servicioId: widget.servicio.id,
+        fecha: _selectedDate!,
+        horaInicio: horaInicio24,
+        horaFin: horaFin24,
+      );
+      
+      if (yaEnCarrito) {
+        buttonText = 'Ya en el Carrito';
+        onPressed = () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Este servicio ya está en tu carrito'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        };
+        buttonColor = Colors.orange;
+      } else {
+        buttonText = 'Agregar al Carrito';
+        onPressed = () => _agregarAlCarrito(carritoProvider);
+        buttonColor = Colors.green;
+      }
     } else {
       buttonText = 'No Disponible';
       onPressed = null;
@@ -1548,13 +1569,140 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
     );
   }
 
+  void _agregarAlCarrito(CarritoProvider carritoProvider) async {
+    print('🛒 _agregarAlCarrito iniciado');
+    
+    if (_selectedDate == null || _selectedStartTime == null || _selectedEndTime == null) {
+      print('❌ Fecha o horarios no seleccionados');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona fecha y horario'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Verificar autenticación
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    print('🔐 Usuario autenticado: ${authProvider.isAuthenticated}');
+    if (!authProvider.isAuthenticated) {
+      print('❌ Usuario no autenticado');
+      return;
+    }
+
+    // Formatear horas para el carrito
+    final horaInicio24 = _selectedStartTime!.hour.toString().padLeft(2, '0') + ':' + 
+                        _selectedStartTime!.minute.toString().padLeft(2, '0') + ':00';
+    final horaFin24 = _selectedEndTime!.hour.toString().padLeft(2, '0') + ':' + 
+                     _selectedEndTime!.minute.toString().padLeft(2, '0') + ':00';
+
+    print('📅 Fecha seleccionada: $_selectedDate');
+    print('⏰ Hora inicio: $horaInicio24');
+    print('⏰ Hora fin: $horaFin24');
+    print('💰 Precio: ${widget.servicio.precio}');
+    print('🏢 Emprendedor ID: ${widget.servicio.emprendedorId}');
+
+    // Mostrar indicador de carga
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Agregando al carrito...'),
+          ],
+        ),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    // Agregar al carrito
+    final success = await carritoProvider.agregarItem(
+      servicioId: widget.servicio.id,
+      nombreServicio: widget.servicio.nombre,
+      nombreEmprendedor: widget.servicio.emprendedor,
+      fecha: _selectedDate!,
+      horaInicio: horaInicio24,
+      horaFin: horaFin24,
+      precio: widget.servicio.precio,
+      emprendedorId: widget.servicio.emprendedorId,
+    );
+
+    print('📡 Resultado de agregarItem: $success');
+
+    // Cerrar el snackbar de carga
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (success) {
+      // Mostrar mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('${widget.servicio.nombre} agregado al carrito'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'Ver Carrito',
+            textColor: Colors.white,
+            onPressed: () {
+              // Navegar al carrito (tab 2)
+              DefaultTabController.of(context)?.animateTo(2);
+            },
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } else {
+      // Mostrar mensaje de error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al agregar al carrito. Intenta nuevamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   IconData _getButtonIcon(bool isAuthenticated, bool isAvailable) {
     if (!isAuthenticated) return Icons.login;
     if (_selectedDate == null || _selectedStartTime == null || _selectedEndTime == null) {
       return Icons.schedule;
     }
     if (_availabilityResult == null) return Icons.check_circle;
-    if (isAvailable) return Icons.shopping_cart;
+    if (isAvailable) {
+      // Verificar si ya está en el carrito
+      if (_selectedDate != null && _selectedStartTime != null && _selectedEndTime != null) {
+        final carritoProvider = Provider.of<CarritoProvider>(context, listen: false);
+        final horaInicio24 = _selectedStartTime!.hour.toString().padLeft(2, '0') + ':' + 
+                            _selectedStartTime!.minute.toString().padLeft(2, '0') + ':00';
+        final horaFin24 = _selectedEndTime!.hour.toString().padLeft(2, '0') + ':' + 
+                         _selectedEndTime!.minute.toString().padLeft(2, '0') + ':00';
+        
+        final yaEnCarrito = carritoProvider.servicioEnCarrito(
+          servicioId: widget.servicio.id,
+          fecha: _selectedDate!,
+          horaInicio: horaInicio24,
+          horaFin: horaFin24,
+        );
+        
+        if (yaEnCarrito) {
+          return Icons.shopping_cart;
+        }
+      }
+      return Icons.shopping_cart;
+    }
     return Icons.cancel;
   }
 

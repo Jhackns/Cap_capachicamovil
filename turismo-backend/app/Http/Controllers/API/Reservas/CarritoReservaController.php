@@ -50,7 +50,7 @@ class CarritoReservaController extends Controller
                 ->where('estado', Reserva::ESTADO_EN_CARRITO)
                 ->with(['servicios.servicio', 'servicios.emprendedor'])
                 ->first();
-                
+
             if (!$carrito) {
                 // Si no existe, crear un nuevo carrito vacío
                 $carrito = new Reserva([
@@ -61,7 +61,7 @@ class CarritoReservaController extends Controller
                 ]);
                 $carrito->save();
             }
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $carrito
@@ -120,14 +120,14 @@ class CarritoReservaController extends Controller
                 'cantidad' => 'sometimes|integer|min:1',
                 'notas_cliente' => 'nullable|string',
             ]);
-            
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'errors' => $validator->errors()
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-            
+
             // Verificar disponibilidad
             $disponibilidad = app(ReservaServicioRepository::class)->verificarDisponibilidad(
                 $request->servicio_id,
@@ -136,21 +136,21 @@ class CarritoReservaController extends Controller
                 $request->hora_inicio,
                 $request->hora_fin
             );
-            
+
             if (!$disponibilidad) {
                 return response()->json([
                     'success' => false,
                     'message' => 'El servicio no está disponible en el horario seleccionado'
                 ], Response::HTTP_CONFLICT);
             }
-            
+
             DB::beginTransaction();
-            
+
             // Obtener o crear carrito
             $carrito = Reserva::where('usuario_id', Auth::id())
                 ->where('estado', Reserva::ESTADO_EN_CARRITO)
                 ->first();
-                
+
             if (!$carrito) {
                 $carrito = new Reserva([
                     'usuario_id' => Auth::id(),
@@ -160,11 +160,11 @@ class CarritoReservaController extends Controller
                 ]);
                 $carrito->save();
             }
-            
+
             // CORRECCIÓN: Obtener precio_referencial del servicio
             $servicio = $this->servicioRepository->findById($request->servicio_id);
             $precio = $servicio ? $servicio->precio_referencial : 0;
-            
+
             // Crear nuevo servicio en el carrito
             $servicioCarrito = new ReservaServicio([
                 'reserva_id' => $carrito->id,
@@ -181,14 +181,14 @@ class CarritoReservaController extends Controller
                 'notas_cliente' => $request->notas_cliente,
                 'notas_emprendedor' => null
             ]);
-            
+
             $servicioCarrito->save();
-            
+
             DB::commit();
-            
+
             // Retornar carrito actualizado
             $carrito = $carrito->fresh(['servicios.servicio:id,nombre,precio_referencial', 'servicios.emprendedor']);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Servicio agregado al carrito exitosamente',
@@ -232,14 +232,14 @@ class CarritoReservaController extends Controller
         try {
             // Buscar el servicio en el carrito
             $servicioCarrito = ReservaServicio::find($id);
-            
+
             if (!$servicioCarrito) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Servicio no encontrado en el carrito'
                 ], Response::HTTP_NOT_FOUND);
             }
-            
+
             // Verificar que pertenezca al usuario actual
             if ($servicioCarrito->reserva->usuario_id !== Auth::id()) {
                 return response()->json([
@@ -247,7 +247,7 @@ class CarritoReservaController extends Controller
                     'message' => 'No tienes permiso para eliminar este servicio'
                 ], Response::HTTP_FORBIDDEN);
             }
-            
+
             // Verificar que esté en estado de carrito
             if ($servicioCarrito->reserva->estado !== Reserva::ESTADO_EN_CARRITO) {
                 return response()->json([
@@ -255,14 +255,14 @@ class CarritoReservaController extends Controller
                     'message' => 'Este servicio ya no está en el carrito'
                 ], Response::HTTP_BAD_REQUEST);
             }
-            
+
             // Eliminar servicio
             $servicioCarrito->delete();
-            
+
             // Verificar si quedan servicios en el carrito
             $carrito = $servicioCarrito->reserva->fresh();
             $carritoActualizado = $carrito->fresh(['servicios.servicio', 'servicios.emprendedor']);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Servicio eliminado del carrito exitosamente',
@@ -303,20 +303,20 @@ class CarritoReservaController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             // Buscar el carrito del usuario
             $carrito = Reserva::where('usuario_id', Auth::id())
                 ->where('estado', Reserva::ESTADO_EN_CARRITO)
                 ->with('servicios')
                 ->first();
-                
+
             if (!$carrito) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se encontró un carrito de reservas'
                 ], Response::HTTP_NOT_FOUND);
             }
-            
+
             // Verificar que el carrito tenga servicios
             if ($carrito->servicios->isEmpty()) {
                 return response()->json([
@@ -324,23 +324,23 @@ class CarritoReservaController extends Controller
                     'message' => 'El carrito está vacío. Agregue servicios antes de confirmar.'
                 ], Response::HTTP_BAD_REQUEST);
             }
-            
+
             // Actualizar estado de la reserva
             $carrito->estado = Reserva::ESTADO_PENDIENTE;
             $carrito->notas = $request->notas ?? $carrito->notas;
             $carrito->save();
-            
+
             // Actualizar estado de los servicios
             foreach ($carrito->servicios as $servicio) {
                 $servicio->estado = ReservaServicio::ESTADO_PENDIENTE;
                 $servicio->save();
             }
-            
+
             DB::commit();
-            
+
             // Retornar reserva confirmada
             $reservaConfirmada = $carrito->fresh(['servicios.servicio', 'servicios.emprendedor']);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Reserva creada exitosamente',
@@ -376,27 +376,27 @@ class CarritoReservaController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             // Buscar el carrito del usuario
             $carrito = Reserva::where('usuario_id', Auth::id())
                 ->where('estado', Reserva::ESTADO_EN_CARRITO)
                 ->first();
-                
+
             if (!$carrito) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se encontró un carrito de reservas'
                 ], Response::HTTP_NOT_FOUND);
             }
-            
+
             // Eliminar todos los servicios del carrito
             $carrito->servicios()->delete();
-            
+
             DB::commit();
-            
+
             // Retornar carrito vacío
             $carritoVacio = $carrito->fresh();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Carrito vaciado exitosamente',
