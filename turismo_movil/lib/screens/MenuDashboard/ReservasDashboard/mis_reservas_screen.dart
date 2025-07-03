@@ -960,15 +960,27 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
           children: [
             ElevatedButton(
               onPressed: () async {
-                // Aquí deberías llamar a un endpoint para actualizar el horario del servicio reservado
-                // Simulación local:
+                // Llamar a la función real para actualizar el horario en el backend
+                final success = await _reservasService.updateReservaServicio(
+                  reservaServicioId: servicio.id,
+                  fechaInicio: selectedFecha.toIso8601String().split('T')[0],
+                  fechaFin: selectedFecha.toIso8601String().split('T')[0],
+                  horaInicio: selectedHoraInicio.format(context),
+                  horaFin: selectedHoraFin.format(context),
+                );
                 setState(() {
                   _editandoHorarioServicio[servicio.id] = false;
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Horario actualizado (simulado)'), backgroundColor: Colors.green),
-                );
-                // TODO: Llamar a un método real para actualizar el horario en el backend
+                if (success) {
+                  await _cargarReservas();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Horario actualizado correctamente'), backgroundColor: Colors.green),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error al actualizar horario'), backgroundColor: Colors.red),
+                  );
+                }
               },
               child: const Text('Guardar'),
             ),

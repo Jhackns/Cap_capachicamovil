@@ -202,4 +202,43 @@ class ReservasService {
       return null;
     }
   }
+
+  // Actualizar fecha y hora de un servicio reservado
+  Future<bool> updateReservaServicio({
+    required int reservaServicioId,
+    required String fechaInicio,
+    required String fechaFin,
+    required String horaInicio,
+    required String horaFin,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('Token no disponible');
+      }
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/api/reserva-servicios/$reservaServicioId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'fecha_inicio': fechaInicio,
+          'fecha_fin': fechaFin,
+          'hora_inicio': horaInicio,
+          'hora_fin': horaFin,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['success'] == true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print('Error actualizando horario de reserva-servicio: $e');
+      return false;
+    }
+  }
 } 

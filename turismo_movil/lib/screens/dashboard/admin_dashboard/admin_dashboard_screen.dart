@@ -28,6 +28,8 @@ import '../../MenuDashboard/PlanesDashboard/planes_management_screen.dart';
 import '../../../blocs/servicios/servicios_bloc.dart';
 import '../../../blocs/servicios/servicios_event.dart';
 import '../user_dashboard/user_dashboard_screen.dart';
+import '../../MenuDashboard/ServiciosDashboard/CategoriasDashboard/categorias_management_screen.dart';
+
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
 
@@ -77,7 +79,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       create: (_) => ServiciosBloc()..add(LoadServicios()),
       child: const ServiciosManagementScreen(),
     ),
-    const _PlaceholderScreen(title: 'Gestión de Categorías'),
+    const CategoriasManagementScreen(),
     ReservasDashboardScreen(),
     const MisReservasScreen(),
     const _PlaceholderScreen(title: 'Mis Inscripciones'),
