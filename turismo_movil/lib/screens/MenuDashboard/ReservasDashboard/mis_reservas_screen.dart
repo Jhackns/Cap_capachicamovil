@@ -39,6 +39,12 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     'canceladas': 0,
   };
 
+  // Estado para mostrar el formulario de cambio de horario por servicio
+  Map<int, bool> _editandoHorarioServicio = {};
+  Map<int, DateTime?> _nuevaFechaServicio = {};
+  Map<int, TimeOfDay?> _nuevaHoraInicioServicio = {};
+  Map<int, TimeOfDay?> _nuevaHoraFinServicio = {};
+
   @override
   void initState() {
     super.initState();
@@ -715,6 +721,7 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
   }
 
   Widget _buildServicioCard(ReservaServicio servicio) {
+    final editandoHorario = _editandoHorarioServicio[servicio.id] ?? false;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -814,19 +821,28 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
           ),
           const SizedBox(height: 12),
 
+          // Formulario de cambio de horario
+          if (editandoHorario) _buildFormularioCambioHorario(servicio),
           // Acciones del servicio
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    // TODO: Implementar cambiar horario
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Funcionalidad en desarrollo'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
+                    setState(() {
+                      _editandoHorarioServicio[servicio.id] = !(editandoHorario);
+                      if (_editandoHorarioServicio[servicio.id] == true) {
+                        _nuevaFechaServicio[servicio.id] = servicio.fechaInicio;
+                        _nuevaHoraInicioServicio[servicio.id] = TimeOfDay(
+                          hour: int.parse(servicio.horaInicio.split(':')[0]),
+                          minute: int.parse(servicio.horaInicio.split(':')[1]),
+                        );
+                        _nuevaHoraFinServicio[servicio.id] = TimeOfDay(
+                          hour: int.parse(servicio.horaFin.split(':')[0]),
+                          minute: int.parse(servicio.horaFin.split(':')[1]),
+                        );
+                      }
+                    });
                   },
                   icon: const Icon(Icons.schedule, size: 16),
                   label: const Text('Cambiar horario'),
@@ -838,33 +854,19 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Implementar confirmar servicio
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Funcionalidad en desarrollo'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.check_circle, size: 16),
-                  label: const Text('Confirmar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.green,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Implementar cancelar servicio
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Funcionalidad en desarrollo'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
+                  onPressed: () async {
+                    // Cancelar servicio
+                    final ok = await _reservasService.cambiarEstadoServicio(servicio.id, 'cancelado');
+                    if (ok) {
+                      await _cargarReservas();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Servicio cancelado'), backgroundColor: Colors.red),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Error al cancelar servicio'), backgroundColor: Colors.red),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.cancel, size: 16),
                   label: const Text('Cancelar'),
@@ -877,6 +879,111 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFormularioCambioHorario(ReservaServicio servicio) {
+    final selectedFecha = _nuevaFechaServicio[servicio.id] ?? servicio.fechaInicio;
+    final selectedHoraInicio = _nuevaHoraInicioServicio[servicio.id] ?? TimeOfDay(hour: int.parse(servicio.horaInicio.split(':')[0]), minute: int.parse(servicio.horaInicio.split(':')[1]));
+    final selectedHoraFin = _nuevaHoraFinServicio[servicio.id] ?? TimeOfDay(hour: int.parse(servicio.horaFin.split(':')[0]), minute: int.parse(servicio.horaFin.split(':')[1]));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedFecha,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _nuevaFechaServicio[servicio.id] = picked;
+                    });
+                  }
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Fecha'),
+                  child: Text(DateFormat('dd/MM/yyyy').format(selectedFecha)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: GestureDetector(
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: selectedHoraInicio,
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _nuevaHoraInicioServicio[servicio.id] = picked;
+                    });
+                  }
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Hora inicio'),
+                  child: Text(selectedHoraInicio.format(context)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: GestureDetector(
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: selectedHoraFin,
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _nuevaHoraFinServicio[servicio.id] = picked;
+                    });
+                  }
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Hora fin'),
+                  child: Text(selectedHoraFin.format(context)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: () async {
+                // Aquí deberías llamar a un endpoint para actualizar el horario del servicio reservado
+                // Simulación local:
+                setState(() {
+                  _editandoHorarioServicio[servicio.id] = false;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Horario actualizado (simulado)'), backgroundColor: Colors.green),
+                );
+                // TODO: Llamar a un método real para actualizar el horario en el backend
+              },
+              child: const Text('Guardar'),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _editandoHorarioServicio[servicio.id] = false;
+                });
+              },
+              child: const Text('Cancelar'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -950,14 +1057,19 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Implementar cancelar reserva
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Funcionalidad en desarrollo'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
+                onPressed: () async {
+                  // Cancelar reserva
+                  final ok = await _reservasService.cancelarReserva(reserva.id);
+                  if (ok) {
+                    await _cargarReservas();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reserva cancelada'), backgroundColor: Colors.red),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Error al cancelar reserva'), backgroundColor: Colors.red),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.cancel, size: 16),
                 label: const Text('Cancelar reserva'),

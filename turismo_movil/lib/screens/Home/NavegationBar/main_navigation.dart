@@ -24,6 +24,15 @@ class _MainNavigationState extends State<MainNavigation> {
   ];
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['initialTab'] is int) {
+      _currentIndex = args['initialTab'];
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],

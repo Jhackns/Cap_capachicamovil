@@ -23,6 +23,15 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     const _MisInscripcionesScreen(),
   ];
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['initialTab'] is int) {
+      _selectedIndex = args['initialTab'];
+    }
+  }
+
   void _onDrawerItemTapped(int index) {
     setState(() => _selectedIndex = index);
     Navigator.pop(context);

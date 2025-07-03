@@ -785,17 +785,21 @@ class _CarritoTabState extends State<CarritoTab> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Código de reserva: ${reserva['codigo_reserva']}'),
+                Text('Código de reserva: 27${reserva['codigo_reserva']}'),
                 const SizedBox(height: 8),
                 const Text('Tu reserva ha sido creada exitosamente. Recibirás una confirmación por correo.'),
               ],
             ),
             actions: [
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  // Navegar a mis reservas o home
-                  DefaultTabController.of(context)?.animateTo(0);
+                  await Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/dashboard',
+                    (route) => false,
+                    arguments: {'initialTab': 2},
+                  );
                 },
                 child: const Text('Aceptar'),
               ),

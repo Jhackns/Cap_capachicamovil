@@ -79,7 +79,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ),
     const _PlaceholderScreen(title: 'Gestión de Categorías'),
     ReservasDashboardScreen(),
-    const _PlaceholderScreen(title: 'Mis Reservas'),
+    const MisReservasScreen(),
     const _PlaceholderScreen(title: 'Mis Inscripciones'),
     BlocProvider(
       create: (_) => PlanesBloc()..add(LoadPlanes()),

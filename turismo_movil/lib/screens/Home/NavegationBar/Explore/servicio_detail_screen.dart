@@ -1627,7 +1627,6 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
 
   void _agregarAlCarrito(CarritoProvider carritoProvider) async {
     print('🛒 _agregarAlCarrito iniciado');
-    
     if (_selectedDate == null || _selectedStartTime == null || _selectedEndTime == null) {
       print('❌ Fecha o horarios no seleccionados');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1638,7 +1637,28 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
       );
       return;
     }
-
+    final horaInicio24 = _selectedStartTime!.hour.toString().padLeft(2, '0') + ':' + 
+                        _selectedStartTime!.minute.toString().padLeft(2, '0') + ':00';
+    final horaFin24 = _selectedEndTime!.hour.toString().padLeft(2, '0') + ':' + 
+                     _selectedEndTime!.minute.toString().padLeft(2, '0') + ':00';
+    // Verificar duplicado antes de agregar
+    final yaEnCarrito = carritoProvider.servicioEnCarrito(
+      servicioId: widget.servicio.id,
+      fecha: _selectedDate!,
+      horaInicio: horaInicio24,
+      horaFin: horaFin24,
+    );
+    if (yaEnCarrito) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Este servicio ya está en tu carrito para la fecha y horario seleccionados.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      await Future.delayed(const Duration(milliseconds: 500));
+      Navigator.pushNamedAndRemoveUntil(context, '/explore', (route) => false);
+      return;
+    }
     // Verificar autenticación
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     print('🔐 Usuario autenticado: ${authProvider.isAuthenticated}');
@@ -1646,18 +1666,6 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
       print('❌ Usuario no autenticado');
       return;
     }
-
-    // Formatear horas para el carrito
-    final horaInicio24 = _selectedStartTime!.hour.toString().padLeft(2, '0') + ':' + 
-                        _selectedStartTime!.minute.toString().padLeft(2, '0') + ':00';
-    final horaFin24 = _selectedEndTime!.hour.toString().padLeft(2, '0') + ':' + 
-                     _selectedEndTime!.minute.toString().padLeft(2, '0') + ':00';
-
-    print('📅 Fecha seleccionada: $_selectedDate');
-    print('⏰ Hora inicio: $horaInicio24');
-    print('⏰ Hora fin: $horaFin24');
-    print('💰 Precio: ${widget.servicio.precio}');
-    print('🏢 Emprendedor ID: ${widget.servicio.emprendedorId}');
 
     // Mostrar indicador de carga
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1712,16 +1720,19 @@ class _ServicioDetailScreenState extends State<ServicioDetailScreen> {
           action: SnackBarAction(
             label: 'Ver Carrito',
             textColor: Colors.white,
-            onPressed: () {
-              // Navegar al carrito (tab 2)
-              DefaultTabController.of(context)?.animateTo(2);
+            onPressed: () async {
+              await Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/main',
+                (route) => false,
+                arguments: {'initialTab': 2},
+              );
             },
           ),
           duration: const Duration(seconds: 3),
         ),
       );
     } else {
-      // Mostrar mensaje de error
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Error al agregar al carrito. Intenta nuevamente.'),
